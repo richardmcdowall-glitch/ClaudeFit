@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClaudeFit — README</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#f5f1ec;color:#1a1f2e;padding:16px;line-height:1.7;font-size:17px;max-width:600px;margin:0 auto}
+h1{font-size:28px;margin-bottom:4px}
+h2{font-size:20px;margin:24px 0 8px;color:#1a1f2e}
+.sub{font-size:15px;color:#7a8494;margin-bottom:20px}
+.apps{display:flex;flex-direction:column;gap:8px;margin:16px 0}
+.app-link{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e0e4ea;border-radius:12px;padding:14px 16px;text-decoration:none;color:#1a1f2e;font-weight:600;font-size:16px}
+.app-link span.icon{font-size:24px}
+.app-link .desc{font-size:13px;color:#7a8494;font-weight:400}
+details{background:#fff;border:1px solid #e0e4ea;border-radius:12px;margin-bottom:8px;overflow:hidden}
+summary{padding:14px 16px;font-weight:700;font-size:17px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::after{content:'▾';font-size:14px;color:#7a8494;transition:transform 0.2s}
+details[open] summary::after{transform:rotate(180deg)}
+summary::-webkit-details-marker{display:none}
+details .body{padding:0 16px 16px;font-size:15px;color:#444}
+details .body p{margin-bottom:10px}
+details .body ul{margin:8px 0 8px 20px}
+details .body li{margin-bottom:6px}
+.step{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
+.step-num{background:#f5c518;color:#1a1f2e;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0}
+.step-text{flex:1}
+.key-link{color:#3b6b9d;text-decoration:none;font-weight:600;word-break:break-all}
+.tip{background:#faf7f3;border-left:3px solid #f5c518;padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;font-size:14px;color:#555}
+.nav-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.nav-icon{background:#faf7f3;border:1px solid #e0e4ea;border-radius:8px;padding:6px 10px;font-size:14px;text-align:center}
+hr{border:none;border-top:1px solid #e0e4ea;margin:20px 0}
+.footer{text-align:center;font-size:13px;color:#7a8494;margin-top:24px;padding-bottom:20px}
+</style>
+</head>
+<body>
+
+<h1>🏋️ ClaudeFit</h1>
+<div class="sub">Personal fitness tracker — workouts, nutrition, cycling power, body composition</div>
+
+<div class="apps">
+  <a class="app-link" href="https://richardmcdowall-glitch.github.io/Zone2/">
+    <span class="icon">🚴</span>
+    <div>Z2 CTRL<br><span class="desc">Zone 2 roller sessions · Bluetooth power & HR</span></div>
+  </a>
+  <a class="app-link" href="https://richardmcdowall-glitch.github.io/EatingWithClaude/">
+    <span class="icon">🍽️</span>
+    <div>EatingWithClaude<br><span class="desc">Standalone meal builder · more food options</span></div>
+  </a>
+</div>
+
+<hr>
+<h2>Getting Started</h2>
+
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-text"><b>Clear old data</b> (if updating)<br>⚙️ Settings → Profile → <b>Clear All Data</b></div>
+</div>
+
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-text"><b>Set up your profile</b><br>Same page — fill in your name, weight target, calorie range, W/kg goals, FTP, and Z2 weekly target. Tap <b>Save</b>.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-text"><b>Get a Claude API key</b><br>Go to <a class="key-link" href="https://console.anthropic.com/settings/keys">console.anthropic.com/settings/keys</a><br>Create a key, paste it into the API Key field in Profile. This powers AI food estimation.</div>
+</div>
+
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-text"><b>EatingWithClaude</b> (optional)<br>Double-tap the 🍽️ icon → opens the standalone app. Paste the same API key in its Settings.</div>
+</div>
+
+<hr>
+<h2>App Guide</h2>
+
+<div class="nav-row">
+  <span class="nav-icon">🏠 Home</span>
+  <span class="nav-icon">🏋️ Gym</span>
+  <span class="nav-icon">🍽️ Food</span>
+  <span class="nav-icon">⏱️ Progress</span>
+  <span class="nav-icon">⚙️ Settings</span>
+</div>
+
+<div class="tip">Swipe from the <b>left edge</b> for a date sidebar. Swipe from the <b>right edge</b> for a quick calendar strip.</div>
+
+<details>
+  <summary>🏠 Home</summary>
+  <div class="body">
+    <p>Your morning check-in. Enter today's weight and resting heart rate, set mood and readiness (1–5 sliders).</p>
+    <p>The Z2 field logs zone 2 minutes for commutes and untracked rides.</p>
+    <p>Below: weight/target/W/kg cards, consistency ring, and body map showing muscles trained in the last 10 days. Tap any muscle for detail.</p>
+  </div>
+</details>
+
+<details>
+  <summary>🏋️ Gym</summary>
+  <div class="body">
+    <p>A scrolling day list. Tap any day to expand and log your session.</p>
+    <ul>
+      <li><b>⭕</b> marks a set done → starts rest timer</li>
+      <li><b>⇊</b> copies set 1 to all sets</li>
+      <li><b>Feel indicators</b> per exercise (tap to cycle)</li>
+      <li><b>💬</b> note per exercise</li>
+      <li><b>🧘 Mobility</b> logs a standard mobility session</li>
+      <li><b>📅 Move</b> relocates a session to another date</li>
+      <li><b>Plans</b> in the header jumps to plan management</li>
+    </ul>
+    <p>The meso banner shows your periodisation phase. Tap to change phase or cycle number.</p>
+  </div>
+</details>
+
+<details>
+  <summary>🍽️ Food</summary>
+  <div class="body">
+    <p><b>Notes tab:</b> Type what you ate, tap <b>Process</b> for AI macro estimation, or <b>📷</b> for photo estimation. Needs API key.</p>
+    <p><b>Quick Add:</b> Fast entry — name, calories, protein.</p>
+    <p><b>Favourites:</b> Tap ★ on any meal in History to save. One-tap to log again.</p>
+    <p><b>Import:</b> Paste MEAL lines from chat. Preview before saving.</p>
+    <p class="tip">Double-tap the 🍽️ nav icon to open <b>EatingWithClaude</b> for more food options.</p>
+  </div>
+</details>
+
+<details>
+  <summary>⏱️ Progress</summary>
+  <div class="body">
+    <p>Charts and trends. Use 7/14/30/∞ to zoom.</p>
+    <ul>
+      <li><b>Body weight</b> with target line and 7-day average</li>
+      <li><b>Calories</b> colour-coded against your floor/ceiling</li>
+      <li><b>W/kg</b> weekly averages with FTP and goal lines</li>
+      <li><b>EF trend</b> (watts ÷ HR) for Z2 and spinning</li>
+      <li><b>Zone 2 weekly</b> totals vs your target</li>
+    </ul>
+  </div>
+</details>
+
+<details>
+  <summary>⚙️ Settings</summary>
+  <div class="body">
+    <p><b>Profile:</b> All your targets, FTP, API key, Clear All Data</p>
+    <p><b>Plans:</b> View, edit, clone, reactivate training plans</p>
+    <p><b>+ New Plan:</b> Build from scratch with autocomplete</p>
+    <p><b>Exercises:</b> Auto-built registry, muscle group overrides</p>
+    <p><b>Export:</b> Gym, food, plan, or full JSON dumps</p>
+    <p><b>Manual:</b> In-app help for every feature</p>
+  </div>
+</details>
+
+<details>
+  <summary>💾 Backup & Restore</summary>
+  <div class="body">
+    <p>Tap <b>💾</b> in the header to create a JSON backup. Copy and save it somewhere safe.</p>
+    <p>To restore: tap Restore in the header → load a file or paste JSON.</p>
+    <p>Covers everything: health, gym, plans, food, exercise registry, profile, and preferences.</p>
+  </div>
+</details>
+
+<details>
+  <summary>💡 Tips</summary>
+  <div class="body">
+    <ul>
+      <li>The <b>rest timer</b> floats in the corner after marking a set done. Tap to dismiss.</li>
+      <li>EF below 1.0 flags fatigue 🚨 — useful for spotting overtraining.</li>
+      <li>Z2 ride data flows from Z2 CTRL via copy-paste on each day.</li>
+      <li>All data stays in your browser. Nothing is sent to any server except AI food calls (direct to Anthropic using your key).</li>
+    </ul>
+  </div>
+</details>
+
+<div class="footer">ClaudeFit · built with Claude</div>
+
+</body>
+</html>
