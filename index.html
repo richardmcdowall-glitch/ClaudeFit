@@ -951,7 +951,7 @@ function Schedule({gym,saveGym,plan,mesoWeek,setMesoWeek,mesoCycle,setMesoCycle,
   const handleDone=(ss,idx)=>{
     const allDone=ss.exercises.every(ex=>sets[ex.id]?.[idx]?.done);
     ss.exercises.forEach(ex=>logSet(ex.id,idx,"done",!allDone));
-    if(!allDone){const isSS=ss.exercises.length>1;const tot=(sets[ss.exercises[0].id]||[]).length;startRest(isSS&&idx<tot-1?60:120);}
+    if(!allDone){const isSS=ss.exercises.length>1;const tot=(sets[ss.exercises[0].id]||[]).length;startRest(240);}
   };
   const saveDay=(ds,pd)=>{
     const saveBW=bw?Number(bw):getWeight(gym,health);
