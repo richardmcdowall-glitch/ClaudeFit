@@ -38,7 +38,7 @@ const pad = n => String(n).padStart(2,"0");
 const todayStr = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const localDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const PD = {weightTarget:79,calFloor:1800,calCeil:2000,wpk1:2.5,wpk2:3.0,ewcUrl:"https://claude.ai/public/artifacts/05d19a7d-2a09-4f08-9c35-fd7c7e4ae96b",z2Url:"https://richardmcdowall-glitch.github.io/Zone2/"};
+const PD = {weightTarget:79,calFloor:1800,calCeil:2000,wpk1:2.5,wpk2:3.0,ewcUrl:"https://claude.ai/public/artifacts/5ff3ebf8-e499-4cb9-844c-0b43336ea84b",z2Url:"https://richardmcdowall-glitch.github.io/Zone2/"};
 const VER = "2.9.3";
 const CHEERS = ["Not bad at all. 💪","Steady work. ✅","That'll do nicely. 👊","Proper session. 🏋️","Job done. 🎯","Good shift. 💚","Cracking effort. 🔥","On it. ✊"];
 const moodEmoji = v => ["😞","😕","😐","🙂","😄"][Math.round(v)-1] || "";
