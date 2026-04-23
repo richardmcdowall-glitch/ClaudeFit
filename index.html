@@ -1192,7 +1192,241 @@ class ErrorGuard extends React.Component {
 
 // ─── FOOD ───────────────────────────────────────────────────────────────────
 function Food({health,saveH,profile}) {
-  return(<div style={{padding:20,background:"#fef9e7",border:"2px solid #c8352e",borderRadius:10,margin:10}}><h2 style={{color:"#c8352e",fontSize:16,fontFamily:"sans-serif"}}>Food v3.0 Test</h2><p style={{fontSize:12,marginTop:8}}>If you see this, the file loaded OK. Health entries: {health?.length||0}</p></div>);
+  const [tab,setTab]=useState("plate");
+  const [q,setQ]=useState("");
+  const [plate,setPlate]=useState([]);
+  const [mn,setMN]=useState("");
+  const [md,setMD]=useState(todayStr());
+  const [qc,setQC]=useState("");
+  const [qn,setQN]=useState("");
+  const [ss,setSs]=useState("");
+  const [hd,setHd]=useState(7);
+
+  const SEED=[
+    {id:"s1",n:"Chicken breast",cat:"🥩",cal:165,p:31,c:0,f:3.6,g:150},
+    {id:"s2",n:"Salmon",cat:"🥩",cal:208,p:20,c:0,f:13,g:150},
+    {id:"s3",n:"Egg",cat:"🥩",cal:147,p:12.6,c:0.7,f:10.3,g:120},
+    {id:"s4",n:"Ground beef",cat:"🥩",cal:254,p:17.2,c:0,f:20,g:150},
+    {id:"s5",n:"Cod",cat:"🥩",cal:82,p:18,c:0,f:0.7,g:150},
+    {id:"s6",n:"Tuna canned",cat:"🥩",cal:130,p:26,c:0,f:2,g:95},
+    {id:"s7",n:"Turkey",cat:"🥩",cal:135,p:30,c:0,f:1.5,g:150},
+    {id:"s8",n:"Bacon",cat:"🥩",cal:540,p:37,c:0,f:42,g:60},
+    {id:"s9",n:"Protein powder",cat:"🥩",cal:380,p:75,c:7,f:5,g:30},
+    {id:"s10",n:"Whole milk",cat:"🧀",cal:61,p:3.2,c:4.8,f:3.5,g:200},
+    {id:"s11",n:"Greek yoghurt",cat:"🧀",cal:97,p:9,c:3.6,f:5,g:150},
+    {id:"s12",n:"Cottage cheese",cat:"🧀",cal:98,p:11,c:3.4,f:4.3,g:100},
+    {id:"s13",n:"Cheese",cat:"🧀",cal:402,p:25,c:0.5,f:33,g:30},
+    {id:"s14",n:"Butter",cat:"🧀",cal:717,p:0.6,c:0.6,f:81,g:10},
+    {id:"s15",n:"Oats",cat:"🍞",cal:379,p:13,c:67,f:6.5,g:50},
+    {id:"s16",n:"Bread",cat:"🍞",cal:265,p:8,c:49,f:3,g:35},
+    {id:"s17",n:"Pasta",cat:"🍞",cal:350,p:12,c:72,f:1.5,g:100},
+    {id:"s18",n:"White rice",cat:"🍞",cal:360,p:6.7,c:79,f:0.7,g:80},
+    {id:"s19",n:"Potato",cat:"🍞",cal:77,p:2,c:17,f:0.1,g:150},
+    {id:"s20",n:"Sweet potato",cat:"🍞",cal:86,p:1.6,c:20,f:0.1,g:150},
+    {id:"s21",n:"Banana",cat:"🍎",cal:89,p:1.1,c:23,f:0.3,g:120},
+    {id:"s22",n:"Apple",cat:"🍎",cal:52,p:0.3,c:14,f:0.2,g:180},
+    {id:"s23",n:"Blueberries",cat:"🍎",cal:57,p:0.7,c:14,f:0.3,g:80},
+    {id:"s24",n:"Avocado",cat:"🍎",cal:160,p:2,c:8.5,f:15,g:75},
+    {id:"s25",n:"Tomato",cat:"🥦",cal:18,p:0.9,c:3.9,f:0.2,g:100},
+    {id:"s26",n:"Broccoli",cat:"🥦",cal:34,p:2.8,c:7,f:0.4,g:100},
+    {id:"s27",n:"Spinach",cat:"🥦",cal:23,p:2.9,c:3.6,f:0.4,g:50},
+    {id:"s28",n:"Salad",cat:"🥦",cal:15,p:1.3,c:2.2,f:0.2,g:30},
+    {id:"s29",n:"Mushrooms",cat:"🥦",cal:22,p:3.1,c:3.3,f:0.3,g:80},
+    {id:"s30",n:"Carrot",cat:"🥦",cal:41,p:0.9,c:10,f:0.2,g:80},
+    {id:"s31",n:"Peas",cat:"🥦",cal:81,p:5.4,c:14,f:0.4,g:60},
+    {id:"s32",n:"Lentils",cat:"🥦",cal:116,p:9,c:20,f:0.4,g:150},
+    {id:"s33",n:"Almonds",cat:"🌰",cal:579,p:21,c:22,f:50,g:25},
+    {id:"s34",n:"Peanut butter",cat:"🌰",cal:588,p:25,c:20,f:50,g:20},
+    {id:"s35",n:"Olive oil",cat:"🍯",cal:884,p:0,c:0,f:100,g:14},
+    {id:"s36",n:"Honey",cat:"🍯",cal:304,p:0.3,c:82,f:0,g:10},
+    {id:"s37",n:"Brunost",cat:"🍯",cal:466,p:10,c:43,f:28,g:20},
+    {id:"s38",n:"Leverpostei",cat:"🍯",cal:250,p:11,c:6,f:20,g:30}
+  ];
+
+  const matches=q.trim().length<2?[]:SEED.filter(i=>i.n.toLowerCase().indexOf(q.trim().toLowerCase())>=0).slice(0,15);
+  let tCal=0,tP=0,tC=0,tF=0;
+  for(let i=0;i<plate.length;i++){const x=plate[i];const m=(x.g||0)/100;tCal+=x.cal*m;tP+=x.p*m;tC+=x.c*m;tF+=x.f*m;}
+  tCal=Math.round(tCal);tP=Math.round(tP*10)/10;tC=Math.round(tC*10)/10;tF=Math.round(tF*10)/10;
+
+  const addIng=(i)=>{const next=plate.slice();next.push({id:i.id,n:i.n,cat:i.cat,cal:i.cal,p:i.p,c:i.c,f:i.f,g:i.g});setPlate(next);setQ("");};
+  const updG=(idx,v)=>{const next=plate.slice();next[idx]=Object.assign({},next[idx],{g:Number(v)||0});setPlate(next);};
+  const rm=(idx)=>{const next=plate.slice();next.splice(idx,1);setPlate(next);};
+
+  const saveMeal=(meal)=>{
+    setSs("Saving...");
+    const date=meal.date;
+    const nl=health.slice();
+    const existing=nl.find(e=>e.date===date);
+    const ex=existing||{date:date,weight:"",mood:"3",readiness:"3",notes:""};
+    const all=(ex.meals||[]).slice();
+    all.push(meal);
+    let sumC=0,sumP=0,sumF=0,sumCb=0;
+    for(let i=0;i<all.length;i++){sumC+=all[i].calories||0;sumP+=all[i].protein_g||0;sumF+=all[i].fat_g||0;sumCb+=all[i].carbs_g||0;}
+    const updated=Object.assign({},ex,{meals:all,calories:String(Math.round(sumC)),protein:String(Math.round(sumP)),fat:String(Math.round(sumF)),carbs:String(Math.round(sumCb))});
+    const filtered=nl.filter(e=>e.date!==date);
+    filtered.push(updated);
+    filtered.sort((a,b)=>a.date.localeCompare(b.date));
+    saveH(filtered,s=>{
+      if(s==="saved"){setSs("✓ Saved");setPlate([]);setMN("");setMD(todayStr());setTimeout(()=>setSs(""),1500);}
+      else if(s==="error"){setSs("✗ Save failed");setTimeout(()=>setSs(""),2500);}
+    });
+  };
+
+  const logPlate=()=>{
+    if(plate.length===0)return;
+    const names=plate.map(i=>i.n).join(", ");
+    const meal={date:md,time:"",name:mn||"Plate",calories:tCal,protein_g:tP,carbs_g:tC,fat_g:tF,description:names};
+    saveMeal(meal);
+  };
+
+  const qAdd=()=>{
+    if(!qc)return;
+    const meal={date:todayStr(),time:"",name:qn||"Quick",calories:Number(qc),protein_g:0,carbs_g:0,fat_g:0,description:""};
+    setQC("");setQN("");
+    saveMeal(meal);
+  };
+
+  // Build history
+  const historyDays=[];
+  const nowD=new Date();nowD.setHours(0,0,0,0);
+  for(let i=hd-1;i>=0;i--){const dt=new Date(nowD);dt.setDate(nowD.getDate()-i);historyDays.push(localDate(dt));}
+  const historyRows=[];
+  for(let i=0;i<historyDays.length;i++){
+    const ds=historyDays[i];
+    const e=health.find(h=>h.date===ds);
+    if(e&&e.meals&&e.meals.length>0){
+      let sumCal=0;
+      for(let j=0;j<e.meals.length;j++)sumCal+=e.meals[j].calories||0;
+      historyRows.push({date:ds,meals:e.meals,totalCal:Math.round(sumCal)});
+    }
+  }
+
+  return React.createElement("div",null,
+    React.createElement("div",{style:{display:"flex",gap:4,marginBottom:12}},
+      React.createElement("button",{key:"tp",onClick:()=>setTab("plate"),style:sty.tab(tab==="plate")},"Plate"),
+      React.createElement("button",{key:"tq",onClick:()=>setTab("quick"),style:sty.tab(tab==="quick")},"Quick+"),
+      React.createElement("button",{key:"th",onClick:()=>setTab("history"),style:sty.tab(tab==="history")},"History")
+    ),
+    tab==="plate"&&React.createElement("div",{key:"plateTab"},
+      React.createElement("div",{style:sty.card},
+        React.createElement("div",{style:{fontSize:13,fontWeight:700,marginBottom:6,color:C.text,fontFamily:SANS}},"Add Ingredient"),
+        React.createElement("input",{
+          value:q,
+          onChange:e=>setQ(e.target.value),
+          placeholder:"salmon, bread, oats...",
+          style:{width:"100%",background:C.cardAlt,border:"1px solid "+C.border,borderRadius:8,padding:"8px 10px",fontSize:12,color:C.text,outline:"none",boxSizing:"border-box",fontFamily:SANS}
+        }),
+        matches.length>0&&React.createElement("div",{style:{marginTop:6,maxHeight:200,overflowY:"auto"}},
+          matches.map(i=>React.createElement("div",{
+            key:i.id,
+            onClick:()=>addIng(i),
+            style:{padding:"6px 8px",borderRadius:6,marginBottom:3,cursor:"pointer",background:C.cardAlt,display:"flex",justifyContent:"space-between"}
+          },
+            React.createElement("span",{style:{fontSize:12,color:C.text,fontFamily:SANS}},i.cat+" "+i.n),
+            React.createElement("span",{style:{fontSize:10,color:C.textDim,fontFamily:MONO}},i.cal+"cal P"+i.p+"g")
+          ))
+        )
+      ),
+      plate.length>0&&React.createElement("div",{style:sty.card,key:"plateCard"},
+        React.createElement("div",{style:{fontSize:13,fontWeight:700,marginBottom:8,color:C.text,fontFamily:SANS}},"Plate"),
+        plate.map((item,idx)=>React.createElement("div",{
+          key:"p"+idx,
+          style:{display:"flex",gap:6,alignItems:"center",marginBottom:6,padding:6,background:C.cardAlt,borderRadius:6}
+        },
+          React.createElement("span",{style:{fontSize:12}},item.cat),
+          React.createElement("span",{style:{flex:1,fontSize:11,color:C.text,fontFamily:SANS}},item.n),
+          React.createElement("input",{
+            type:"number",
+            value:item.g,
+            onChange:e=>updG(idx,e.target.value),
+            style:{width:50,background:C.surface,border:"1px solid "+C.border,borderRadius:4,padding:"2px 4px",fontSize:11,color:C.text,outline:"none",fontFamily:MONO}
+          }),
+          React.createElement("span",{style:{fontSize:9,color:C.textDim,fontFamily:SANS}},"g"),
+          React.createElement("button",{
+            onClick:()=>rm(idx),
+            style:{padding:"2px 6px",background:C.red,color:"white",border:"none",borderRadius:4,cursor:"pointer",fontSize:10,fontFamily:SANS}
+          },"×")
+        ))
+      ),
+      plate.length>0&&React.createElement("div",{style:sty.card,key:"totalsCard"},
+        React.createElement("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:8}},
+          React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.text,fontFamily:SANS}},"Totals"),
+          React.createElement("div",{style:{fontSize:11,fontFamily:MONO,color:C.textMid}},tCal+"kcal · P"+tP+"g · C"+tC+"g · F"+tF+"g")
+        ),
+        React.createElement("input",{
+          type:"text",
+          value:mn,
+          onChange:e=>setMN(e.target.value),
+          placeholder:"Meal name (optional)",
+          style:{width:"100%",background:C.cardAlt,border:"1px solid "+C.border,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",marginBottom:6,boxSizing:"border-box",fontFamily:SANS}
+        }),
+        React.createElement("input",{
+          type:"date",
+          value:md,
+          onChange:e=>setMD(e.target.value),
+          style:{width:"100%",background:C.cardAlt,border:"1px solid "+C.border,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",marginBottom:8,boxSizing:"border-box",fontFamily:MONO}
+        }),
+        React.createElement("button",{
+          onClick:logPlate,
+          style:Object.assign({},sty.btn(C.green,true),{fontSize:12,width:"100%"})
+        },"Log Plate"),
+        ss&&React.createElement("div",{style:{marginTop:6,fontSize:11,color:ss.indexOf("fail")>=0||ss.indexOf("✗")>=0?C.red:C.green,fontFamily:SANS}},ss)
+      ),
+      plate.length===0&&React.createElement("div",{
+        style:{textAlign:"center",color:C.textDim,fontSize:12,padding:16,fontFamily:SANS},
+        key:"empty"
+      },"Search and add ingredients above.")
+    ),
+    tab==="quick"&&React.createElement("div",{style:sty.card,key:"quickTab"},
+      React.createElement("div",{style:{fontSize:13,fontWeight:700,marginBottom:8,color:C.text,fontFamily:SANS}},"Quick Add"),
+      React.createElement("input",{
+        type:"text",
+        value:qn,
+        onChange:e=>setQN(e.target.value),
+        placeholder:"Name",
+        style:{width:"100%",background:C.cardAlt,border:"1px solid "+C.border,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",marginBottom:6,boxSizing:"border-box",fontFamily:SANS}
+      }),
+      React.createElement("div",{style:{display:"flex",gap:4,marginBottom:8}},
+        React.createElement("input",{
+          key:"qci",
+          type:"number",
+          value:qc,
+          onChange:e=>setQC(e.target.value),
+          placeholder:"kcal",
+          style:{flex:1,background:C.cardAlt,border:"1px solid "+C.border,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",fontFamily:MONO}
+        }),
+        React.createElement("button",{
+          key:"qbtn",
+          onClick:qAdd,
+          disabled:!qc,
+          style:Object.assign({},sty.btn(C.green,true),{opacity:qc?1:0.4})
+        },"+")
+      ),
+      ss&&React.createElement("div",{style:{fontSize:11,color:ss.indexOf("fail")>=0||ss.indexOf("✗")>=0?C.red:C.green,fontFamily:SANS}},ss)
+    ),
+    tab==="history"&&React.createElement("div",{key:"histTab"},
+      React.createElement("div",{style:{display:"flex",gap:4,marginBottom:8}},
+        React.createElement("button",{key:"h7",onClick:()=>setHd(7),style:{fontSize:11,padding:"4px 10px",background:hd===7?C.yellow:C.surface,border:"none",borderRadius:6,cursor:"pointer",fontFamily:SANS,color:hd===7?C.dark:C.textMid}},"7d"),
+        React.createElement("button",{key:"h30",onClick:()=>setHd(30),style:{fontSize:11,padding:"4px 10px",background:hd===30?C.yellow:C.surface,border:"none",borderRadius:6,cursor:"pointer",fontFamily:SANS,color:hd===30?C.dark:C.textMid}},"30d"),
+        React.createElement("button",{key:"hall",onClick:()=>setHd(9999),style:{fontSize:11,padding:"4px 10px",background:hd===9999?C.yellow:C.surface,border:"none",borderRadius:6,cursor:"pointer",fontFamily:SANS,color:hd===9999?C.dark:C.textMid}},"All")
+      ),
+      historyRows.length===0
+        ?React.createElement("div",{style:{color:C.textDim,fontSize:12,textAlign:"center",padding:16,fontFamily:SANS}},"No meals logged in this range.")
+        :historyRows.map(r=>React.createElement("div",{key:r.date,style:sty.card},
+            React.createElement("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
+              React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.text,fontFamily:MONO}},r.date),
+              React.createElement("div",{style:{fontSize:11,fontFamily:MONO,color:C.textMid}},r.totalCal+"kcal")
+            ),
+            r.meals.map((m,i)=>React.createElement("div",{
+              key:"m"+i,
+              style:{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:11,fontFamily:SANS,color:C.text}
+            },
+              React.createElement("span",null,m.name),
+              React.createElement("span",{style:{fontFamily:MONO}},m.calories+"kcal P"+m.protein_g+"g")
+            ))
+          ))
+    )
+  );
 }
 
 // ─── SETTINGS ───────────────────────────────────────────────────────────────
