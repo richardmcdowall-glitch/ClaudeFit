@@ -1,4 +1,25 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>ClaudeFit</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Segoe UI',system-ui,sans-serif;background:#f5f1ec;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+input[type="range"]{-webkit-appearance:none;height:6px;border-radius:3px;background:#ddd6cc;outline:none}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#f5c518;cursor:pointer}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(1.3)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" data-type="module">
+const {useState,useEffect,useRef,useCallback,useMemo}=React;
 
 // ─── DESIGN TOKENS (Bumblebee) ──────────────────────────────────────────────
 const C = {
@@ -17,7 +38,8 @@ const pad = n => String(n).padStart(2,"0");
 const todayStr = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const localDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const VER = "2.9.2";
+const PD = {weightTarget:79,calFloor:1800,calCeil:2000,wpk1:2.5,wpk2:3.0,ewcUrl:"https://claude.ai/public/artifacts/5ff3ebf8-e499-4cb9-844c-0b43336ea84b",z2Url:"https://richardmcdowall-glitch.github.io/Zone2/"};
+const VER = "3.0.0";
 const CHEERS = ["Not bad at all. 💪","Steady work. ✅","That'll do nicely. 👊","Proper session. 🏋️","Job done. 🎯","Good shift. 💚","Cracking effort. 🔥","On it. ✊"];
 const moodEmoji = v => ["😞","😕","😐","🙂","😄"][Math.round(v)-1] || "";
 const readyEmoji = v => ["🪫","😴","⚡","🔥","💥"][Math.round(v)-1] || "";
@@ -34,7 +56,7 @@ const MESO = [
 const K = { health:"rh-health-v3", log:"rh-workout-log-v2", meta:"rh-workout-meta",
   plans:"rh-plans-v1", ftp:"rh-ftp-v1", foodNotes:"rh-food-notes-v1",
   favMeals:"rh-fav-meals-v1",
-  devNotes:"rh-dev-notes-v1", exRegistry:"rh-exercise-registry-v1", z2Target:"rh-z2-target-v1" };
+  devNotes:"rh-dev-notes-v1", exRegistry:"rh-exercise-registry-v1", z2Target:"rh-z2-target-v1", profile:"rh-profile-v1" };
 
 const TIMEOUT=5000;
 const hasClaudeStorage = typeof window !== 'undefined' && window.storage && typeof window.storage.get === 'function';
@@ -111,7 +133,7 @@ async function restoreBackup(raw) {
 
 // ─── SEED DATA (Richard's converted backup) ────────────────────────────────
 const SEED=null;
-const SEED_PLANS=JSON.parse('[{"id": "original", "name": "Original Split", "createdAt": "2026-01-01", "activations": [{"from": "2026-01-01", "to": "2026-03-08"}], "days": {"Mon": {"label": "Arms & Shoulders", "supersets": [{"id": "ss1", "name": "Dips", "exercises": [{"id": "dips", "name": "Dips", "baseSets": 4, "reps": "8-12", "baseWeight": 0, "unit": "BW+kg"}, {"id": "lat", "name": "Lateral Raises", "baseSets": 4, "reps": "12-15", "baseWeight": 10, "unit": "kg"}]}, {"id": "ss2", "name": "Face Pulls", "exercises": [{"id": "fp", "name": "Face Pulls", "baseSets": 4, "reps": "15-20", "baseWeight": 15, "unit": "kg"}, {"id": "curl", "name": "Barbell Curls", "baseSets": 4, "reps": "10-12", "baseWeight": 30, "unit": "kg"}]}, {"id": "ss3", "name": "Wrist Roller", "exercises": [{"id": "wrist", "name": "Wrist Roller", "baseSets": 3, "reps": "1 min", "baseWeight": 5, "unit": "kg"}]}]}, "Tue": {"label": "Spinning + Calves", "supersets": [{"id": "sp1", "name": "Spinning", "exercises": [{"id": "spin", "name": "Spinning", "baseSets": 1, "reps": "45 min", "baseWeight": 0, "unit": "min", "trackWatts": true}]}, {"id": "sp2", "name": "Calf Raises", "exercises": [{"id": "calv", "name": "Calf Raises", "baseSets": 3, "reps": "20", "baseWeight": 0, "unit": "BW"}]}]}, "Wed": {"label": "Arms & Shoulders", "supersets": [{"id": "ws1", "name": "Dips", "exercises": [{"id": "dips2", "name": "Dips", "baseSets": 4, "reps": "8-12", "baseWeight": 0, "unit": "BW+kg"}, {"id": "lat2", "name": "Lateral Raises", "baseSets": 4, "reps": "12-15", "baseWeight": 10, "unit": "kg"}]}, {"id": "ws2", "name": "Face Pulls", "exercises": [{"id": "fp2", "name": "Face Pulls", "baseSets": 4, "reps": "15-20", "baseWeight": 15, "unit": "kg"}, {"id": "curl2", "name": "Barbell Curls", "baseSets": 4, "reps": "10-12", "baseWeight": 30, "unit": "kg"}]}, {"id": "ws3", "name": "Wrist Roller", "exercises": [{"id": "wrist2", "name": "Wrist Roller", "baseSets": 3, "reps": "1 min", "baseWeight": 5, "unit": "kg"}]}]}, "Thu": {"label": "Spinning + Calves", "supersets": [{"id": "tp1", "name": "Spinning", "exercises": [{"id": "spin2", "name": "Spinning", "baseSets": 1, "reps": "45 min", "baseWeight": 0, "unit": "min", "trackWatts": true}]}, {"id": "tp2", "name": "Calf Raises", "exercises": [{"id": "calv2", "name": "Calf Raises", "baseSets": 3, "reps": "20", "baseWeight": 0, "unit": "BW"}]}]}, "Fri": {"label": "Legs", "supersets": [{"id": "fs1", "name": "Hack Squat", "exercises": [{"id": "hack", "name": "Hack Squat", "baseSets": 4, "reps": "6-10", "baseWeight": 60, "unit": "kg"}, {"id": "calv3", "name": "Calf Raises", "baseSets": 4, "reps": "20", "baseWeight": 0, "unit": "BW"}]}, {"id": "fs2", "name": "Romanian DL", "exercises": [{"id": "dl", "name": "Romanian DL", "baseSets": 3, "reps": "8-10", "baseWeight": 70, "unit": "kg"}, {"id": "hab", "name": "Hip Abductions", "baseSets": 3, "reps": "15-20", "baseWeight": 15, "unit": "kg"}]}, {"id": "fs3", "name": "Pull-ups", "exercises": [{"id": "pull", "name": "Pull-ups", "baseSets": 4, "reps": "6-10", "baseWeight": 0, "unit": "BW", "trackGrip": true}]}]}, "Sat": {"label": "Rest / Outdoor Ride", "supersets": []}, "Sun": {"label": "Legs", "supersets": [{"id": "sus1", "name": "Hack Squat", "exercises": [{"id": "hack2", "name": "Hack Squat", "baseSets": 4, "reps": "6-10", "baseWeight": 60, "unit": "kg"}, {"id": "calv4", "name": "Calf Raises", "baseSets": 4, "reps": "20", "baseWeight": 0, "unit": "BW"}]}, {"id": "sus2", "name": "Romanian DL", "exercises": [{"id": "dl2", "name": "Romanian DL", "baseSets": 3, "reps": "8-10", "baseWeight": 70, "unit": "kg"}, {"id": "hab2", "name": "Hip Abductions", "baseSets": 3, "reps": "15-20", "baseWeight": 15, "unit": "kg"}]}, {"id": "sus3", "name": "Pull-ups", "exercises": [{"id": "pull2", "name": "Pull-ups", "baseSets": 4, "reps": "6-10", "baseWeight": 0, "unit": "BW", "trackGrip": true}]}]}}}, {"id": "plan_1772961740344", "name": "Spring 2026", "createdAt": "2026-03-08", "activations": [{"from": "2026-03-08", "to": "2026-03-14"}], "days": {"Sun": {"label": "Fresh Legs", "supersets": [{"id": "Sun_solo0", "name": "Pull-ups", "exercises": [{"id": "Sun_ex0", "name": "Pull-ups", "baseSets": 5, "reps": "6-10", "baseWeight": 0, "unit": "BW", "trackWatts": false, "trackGrip": true}]}, {"id": "Sun_ss1", "name": "Hack Squat", "exercises": [{"id": "Sun_ss1_0", "name": "Hack Squat", "baseSets": 5, "reps": "12", "baseWeight": 90, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "Sun_ss1_1", "name": "Calf Raises", "baseSets": 5, "reps": "20", "baseWeight": 90, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "Sun_ss2", "name": "Romanian DL", "exercises": [{"id": "Sun_ss2_0", "name": "Romanian DL", "baseSets": 4, "reps": "8-10", "baseWeight": 70, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "Sun_ss2_1", "name": "Hip Abductions", "baseSets": 4, "reps": "15-20", "baseWeight": 50, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "Sun_solo3", "name": "Leg curls", "exercises": [{"id": "Sun_ex3", "name": "Leg curls", "baseSets": 3, "reps": "12", "baseWeight": 21, "unit": "kg", "trackWatts": false, "trackGrip": false}]}]}, "Fri": {"label": "Tired Legs", "supersets": [{"id": "Fri_solo0", "name": "Pull-ups", "exercises": [{"id": "Fri_ex0", "name": "Pull-ups", "baseSets": 5, "reps": "6-10", "baseWeight": 0, "unit": "BW", "trackWatts": false, "trackGrip": true}]}, {"id": "Fri_ss1", "name": "Plate Front Squat", "exercises": [{"id": "Fri_ss1_0", "name": "Plate Front Squat", "baseSets": 4, "reps": "10-12", "baseWeight": 20, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "Fri_ss1_1", "name": "Calf Raises", "baseSets": 5, "reps": "20", "baseWeight": 90, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "Fri_ss2", "name": "Romanian DL", "exercises": [{"id": "Fri_ss2_0", "name": "Romanian DL", "baseSets": 4, "reps": "8-10", "baseWeight": 70, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "Fri_ss2_1", "name": "Hip Abductions", "baseSets": 4, "reps": "15-20", "baseWeight": 50, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "Fri_solo3", "name": "Glute bridges", "exercises": [{"id": "Fri_ex3", "name": "Glute bridges", "baseSets": 3, "reps": "12", "baseWeight": 0, "unit": "BW", "trackWatts": false, "trackGrip": false}]}]}, "Mon": {"label": "Arms & Shoulders", "supersets": [{"id": "Mon_ss0", "name": "Dips", "exercises": [{"id": "Mon_ss0_0", "name": "Dips", "baseSets": 5, "reps": "8-12", "baseWeight": 0, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "Mon_ss0_1", "name": "Lateral Raises", "baseSets": 5, "reps": "12-15", "baseWeight": 10, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "Mon_ss1", "name": "Face Pulls", "exercises": [{"id": "Mon_ss1_0", "name": "Face Pulls", "baseSets": 5, "reps": "15-20", "baseWeight": 8.75, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "Mon_ss1_1", "name": "Cable Bicep Curls", "baseSets": 5, "reps": "10-12", "baseWeight": 15, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "Mon_solo2", "name": "Wrist Roller 2x 2min 5kg", "exercises": [{"id": "Mon_ex2", "name": "Wrist Roller 2x 2min 5kg", "baseSets": 3, "reps": "8-12", "baseWeight": 0, "unit": "kg"}]}]}, "Wed": {"label": "Arms & Shoulders Light", "supersets": [{"id": "Wed_ss0", "name": "Dips", "exercises": [{"id": "Wed_ss0_0", "name": "Dips", "baseSets": 5, "reps": "8-12", "baseWeight": 0, "unit": "BW", "trackWatts": false, "trackGrip": false}, {"id": "Wed_ss0_1", "name": "Lateral Raises", "baseSets": 5, "reps": "12-15", "baseWeight": 7, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "Wed_ss1", "name": "Face Pulls", "exercises": [{"id": "Wed_ss1_0", "name": "Face Pulls", "baseSets": 5, "reps": "15-20", "baseWeight": 6.25, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "Wed_ss1_1", "name": "Cable Bicep Curls", "baseSets": 5, "reps": "10-12", "baseWeight": 10, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "Wed_solo2", "name": "Wrist Roller", "exercises": [{"id": "Wed_ex2", "name": "Wrist Roller", "baseSets": 2, "reps": "1", "baseWeight": 2, "unit": "min", "trackWatts": false, "trackGrip": false}]}]}, "Tue": {"label": "Spinning", "supersets": [{"id": "Tue_solo0", "name": "Spinning", "exercises": [{"id": "Tue_ex0", "name": "Spinning", "baseSets": 1, "reps": "45", "baseWeight": 0, "unit": "min", "trackWatts": true, "trackGrip": false}]}]}, "Thu": {"label": "Spinning", "supersets": [{"id": "Thu_solo0", "name": "Spinning", "exercises": [{"id": "Thu_ex0", "name": "Spinning", "baseSets": 1, "reps": "45", "baseWeight": 0, "unit": "min", "trackWatts": true, "trackGrip": false}]}]}}}, {"id": "plan_1773440736905", "name": "PreExhaust", "createdAt": "2026-03-13", "activations": [{"from": "2026-03-14", "to": "2026-03-29"}], "days": {"Mon": {"label": "Upper Body", "supersets": [{"id": "face-pulls-mon", "name": "Face Pulls", "exercises": [{"id": "face-pulls-mon", "name": "Face Pulls", "baseSets": 5, "reps": "12", "baseWeight": 3.75, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "dips-mon", "name": "Dips", "baseSets": 5, "reps": "10", "baseWeight": 0, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "dumbbell-lateral-raises-mon", "name": "Dumbbell Lateral Raises", "exercises": [{"id": "dumbbell-lateral-raises-mon", "name": "Dumbbell Lateral Raises", "baseSets": 5, "reps": "12", "baseWeight": 4, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "cable-hammer-curls-mon", "name": "Cable Hammer Curls", "baseSets": 5, "reps": "12", "baseWeight": 16, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "wrist-rollers-mon", "name": "Wrist Rollers", "exercises": [{"id": "wrist-rollers-mon", "name": "Wrist Rollers", "baseSets": 2, "reps": "12", "baseWeight": 0, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "push-ups-mon", "name": "Push-ups", "baseSets": 2, "reps": "12", "baseWeight": 0, "unit": "kg", "trackWatts": false, "trackGrip": false}]}]}, "Tue": {"label": "Legs + Spinning", "supersets": [{"id": "pull-ups-tue", "name": "Pull-ups", "exercises": [{"id": "pull-ups-tue", "name": "Pull-ups", "baseSets": 5, "reps": "8", "baseWeight": 0, "unit": "kg", "trackWatts": false, "trackGrip": true}]}, {"id": "hack-squat-tue", "name": "Hack Squat", "exercises": [{"id": "hack-squat", "name": "Hack Squat", "baseSets": 5, "reps": "12", "baseWeight": 90, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "calf-raises-tue", "name": "Calf Raises", "baseSets": 5, "reps": "20", "baseWeight": 90, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "romanian-dl-tue", "name": "Romanian DL", "exercises": [{"id": "romanian-dl-tue", "name": "Romanian DL", "baseSets": 3, "reps": "8", "baseWeight": 70, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "hip-abductions-tue", "name": "Hip Abductions", "baseSets": 3, "reps": "12", "baseWeight": 60, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "spinning-tue", "name": "Spinning", "exercises": [{"id": "spinning-tue", "name": "Spinning", "baseSets": 1, "reps": "45", "baseWeight": 0, "unit": "min", "trackWatts": true, "trackGrip": false}]}]}, "Wed": {"label": "Recovery", "supersets": [{"id": "calf-raises-wed", "name": "Calf Raises", "exercises": [{"id": "calf-raises-wed", "name": "Calf Raises", "baseSets": 2, "reps": "20", "baseWeight": 90, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "leg-curls-wed", "name": "Leg Curls", "exercises": [{"id": "leg-curls", "name": "Leg Curls", "baseSets": 2, "reps": "12", "baseWeight": 25, "unit": "kg", "trackWatts": false, "trackGrip": false}]}]}, "Thu": {"label": "Legs + Spinning", "supersets": [{"id": "pull-ups-thu", "name": "Pull-ups", "exercises": [{"id": "pull-ups-thu", "name": "Pull-ups", "baseSets": 5, "reps": "8", "baseWeight": 0, "unit": "kg", "trackWatts": false, "trackGrip": true}]}, {"id": "plate-front-squat-thu", "name": "Plate Front Squat", "exercises": [{"id": "plate-front-squat", "name": "Plate Front Squat", "baseSets": 5, "reps": "12", "baseWeight": 15, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "calf-raises-thu", "name": "Calf Raises", "baseSets": 5, "reps": "20", "baseWeight": 90, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "romanian-dl-thu", "name": "Romanian DL", "exercises": [{"id": "romanian-dl-thu", "name": "Romanian DL", "baseSets": 3, "reps": "8", "baseWeight": 70, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "hip-abductions-thu", "name": "Hip Abductions", "baseSets": 3, "reps": "12", "baseWeight": 60, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "spinning-thu", "name": "Spinning", "exercises": [{"id": "spinning-thu", "name": "Spinning", "baseSets": 1, "reps": "45", "baseWeight": 0, "unit": "min", "trackWatts": true, "trackGrip": false}]}]}, "Fri": {"label": "Upper Body", "supersets": [{"id": "face-pulls-fri", "name": "Face Pulls", "exercises": [{"id": "face-pulls-fri", "name": "Face Pulls", "baseSets": 5, "reps": "12", "baseWeight": 3.75, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "dips-fri", "name": "Dips", "baseSets": 5, "reps": "10", "baseWeight": 0, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "dumbbell-lateral-raises-fri", "name": "Dumbbell Lateral Raises", "exercises": [{"id": "dumbbell-lateral-raises-fri", "name": "Dumbbell Lateral Raises", "baseSets": 5, "reps": "12", "baseWeight": 4, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "cable-hammer-curls-fri", "name": "Cable Hammer Curls", "baseSets": 5, "reps": "12", "baseWeight": 16, "unit": "kg", "trackWatts": false, "trackGrip": false}]}, {"id": "wrist-rollers-fri", "name": "Wrist Rollers", "exercises": [{"id": "wrist-rollers-fri", "name": "Wrist Rollers", "baseSets": 2, "reps": "12", "baseWeight": 0, "unit": "kg", "trackWatts": false, "trackGrip": false}, {"id": "push-ups-fri", "name": "Push-ups", "baseSets": 2, "reps": "12", "baseWeight": 0, "unit": "kg", "trackWatts": false, "trackGrip": false}]}]}}}, {"id": "plan_april_2026", "name": "April", "createdAt": "2026-03-28", "activations": [{"from": "2026-03-30", "to": null}], "days": {"Mon": {"label": "Upper Body", "supersets": [{"id": "fp-dips-mon-apr", "name": "Face Pulls + Dips", "exercises": [{"id": "face-pulls-mon-apr", "name": "Face Pulls", "baseSets": 5, "reps": "12", "baseWeight": 3.75, "unit": "kg"}, {"id": "dips-mon-apr", "name": "Dips", "baseSets": 5, "reps": "10", "baseWeight": 0, "unit": "BW+kg"}]}, {"id": "lat-curls-mon-apr", "name": "DB Lateral Raises + Cable Hammer Curls", "exercises": [{"id": "db-lat-raises-mon-apr", "name": "Dumbbell Lateral Raises", "baseSets": 5, "reps": "12", "baseWeight": 4, "unit": "kg"}, {"id": "cable-hammer-curls-mon-apr", "name": "Cable Hammer Curls", "baseSets": 5, "reps": "12", "baseWeight": 16, "unit": "kg"}]}, {"id": "wrist-push-mon-apr", "name": "Wrist Rollers + Push-ups", "exercises": [{"id": "wrist-rollers-mon-apr", "name": "Wrist Rollers", "baseSets": 2, "reps": "2 min", "baseWeight": 5, "unit": "kg"}, {"id": "push-ups-mon-apr", "name": "Push-ups", "baseSets": 2, "reps": "12", "baseWeight": 0, "unit": "BW"}]}]}, "Tue": {"label": "Legs + Spinning", "supersets": [{"id": "pullups-tue-apr", "name": "Pull-ups", "exercises": [{"id": "pull-ups-tue-apr", "name": "Pull-ups", "baseSets": 5, "reps": "8", "baseWeight": 0, "unit": "BW", "trackGrip": true}]}, {"id": "hack-calf-tue-apr", "name": "Hack Squat + Calf Raises", "exercises": [{"id": "hack-squat-tue-apr", "name": "Hack Squat", "baseSets": 5, "reps": "12", "baseWeight": 90, "unit": "kg"}, {"id": "calf-raises-tue-apr", "name": "Calf Raises", "baseSets": 5, "reps": "20", "baseWeight": 90, "unit": "kg"}]}, {"id": "rdl-abd-tue-apr", "name": "Romanian DL + Hip Abductions", "exercises": [{"id": "romanian-dl-tue-apr", "name": "Romanian DL", "baseSets": 3, "reps": "8", "baseWeight": 70, "unit": "kg"}, {"id": "hip-abductions-tue-apr", "name": "Hip Abductions", "baseSets": 3, "reps": "12", "baseWeight": 60, "unit": "kg"}]}, {"id": "spin-tue-apr", "name": "Spinning", "exercises": [{"id": "spinning-tue-apr", "name": "Spinning", "baseSets": 1, "reps": "45", "baseWeight": 0, "unit": "min", "trackWatts": true}]}]}, "Wed": {"label": "Rest / Zone 2 / Mobility", "supersets": []}, "Thu": {"label": "Legs + Spinning", "supersets": [{"id": "pullups-thu-apr", "name": "Pull-ups", "exercises": [{"id": "pull-ups-thu-apr", "name": "Pull-ups", "baseSets": 5, "reps": "8", "baseWeight": 0, "unit": "BW", "trackGrip": true}]}, {"id": "pfsq-calf-thu-apr", "name": "Plate Front Squat + Calf Raises", "exercises": [{"id": "plate-front-squat-thu-apr", "name": "Plate Front Squat", "baseSets": 5, "reps": "12", "baseWeight": 15, "unit": "kg"}, {"id": "calf-raises-thu-apr", "name": "Calf Raises", "baseSets": 5, "reps": "20", "baseWeight": 90, "unit": "kg"}]}, {"id": "rdl-abd-thu-apr", "name": "Romanian DL + Hip Abductions", "exercises": [{"id": "romanian-dl-thu-apr", "name": "Romanian DL", "baseSets": 3, "reps": "8", "baseWeight": 70, "unit": "kg"}, {"id": "hip-abductions-thu-apr", "name": "Hip Abductions", "baseSets": 3, "reps": "12", "baseWeight": 60, "unit": "kg"}]}, {"id": "spin-thu-apr", "name": "Spinning", "exercises": [{"id": "spinning-thu-apr", "name": "Spinning", "baseSets": 1, "reps": "45", "baseWeight": 0, "unit": "min", "trackWatts": true}]}]}, "Fri": {"label": "Upper Body", "supersets": [{"id": "fp-dips-fri-apr", "name": "Face Pulls + Dips", "exercises": [{"id": "face-pulls-fri-apr", "name": "Face Pulls", "baseSets": 5, "reps": "12", "baseWeight": 3.75, "unit": "kg"}, {"id": "dips-fri-apr", "name": "Dips", "baseSets": 5, "reps": "10", "baseWeight": 0, "unit": "BW+kg"}]}, {"id": "lat-curls-fri-apr", "name": "DB Lateral Raises + Cable Hammer Curls", "exercises": [{"id": "db-lat-raises-fri-apr", "name": "Dumbbell Lateral Raises", "baseSets": 5, "reps": "12", "baseWeight": 4, "unit": "kg"}, {"id": "cable-hammer-curls-fri-apr", "name": "Cable Hammer Curls", "baseSets": 5, "reps": "12", "baseWeight": 16, "unit": "kg"}]}, {"id": "wrist-push-fri-apr", "name": "Wrist Rollers + Push-ups", "exercises": [{"id": "wrist-rollers-fri-apr", "name": "Wrist Rollers", "baseSets": 2, "reps": "2 min", "baseWeight": 5, "unit": "kg"}, {"id": "push-ups-fri-apr", "name": "Push-ups", "baseSets": 2, "reps": "12", "baseWeight": 0, "unit": "BW"}]}]}, "Sat": {"label": "Rest / Zone 2 / Mobility", "supersets": []}, "Sun": {"label": "Rest / Zone 2 / Mobility", "supersets": []}}}]');
+const SEED_PLANS=JSON.parse('[{"id":"plan_april_2026","name":"April","createdAt":"2026-03-28","activations":[{"from":"2026-03-30","to":null}],"days":{"Mon":{"label":"Upper Body","supersets":[{"id":"fp-dips-mon-apr","name":"Face Pulls + Dips","exercises":[{"id":"face-pulls-mon-apr","name":"Face Pulls","baseSets":5,"reps":"12","baseWeight":3.75,"unit":"kg"},{"id":"dips-mon-apr","name":"Dips","baseSets":5,"reps":"10","baseWeight":0,"unit":"BW+kg"}]},{"id":"lat-curls-mon-apr","name":"DB Lateral Raises + Cable Hammer Curls","exercises":[{"id":"db-lat-raises-mon-apr","name":"Dumbbell Lateral Raises","baseSets":5,"reps":"12","baseWeight":4,"unit":"kg"},{"id":"cable-hammer-curls-mon-apr","name":"Cable Hammer Curls","baseSets":5,"reps":"12","baseWeight":16,"unit":"kg"}]},{"id":"wrist-push-mon-apr","name":"Wrist Rollers + Push-ups","exercises":[{"id":"wrist-rollers-mon-apr","name":"Wrist Rollers","baseSets":2,"reps":"2 min","baseWeight":5,"unit":"kg"},{"id":"push-ups-mon-apr","name":"Push-ups","baseSets":2,"reps":"12","baseWeight":0,"unit":"BW"}]}]},"Tue":{"label":"Legs + Spinning","supersets":[{"id":"pullups-tue-apr","name":"Pull-ups","exercises":[{"id":"pull-ups-tue-apr","name":"Pull-ups","baseSets":5,"reps":"8","baseWeight":0,"unit":"BW","trackGrip":true}]},{"id":"hack-calf-tue-apr","name":"Hack Squat + Calf Raises","exercises":[{"id":"hack-squat-tue-apr","name":"Hack Squat","baseSets":5,"reps":"12","baseWeight":90,"unit":"kg"},{"id":"calf-raises-tue-apr","name":"Calf Raises","baseSets":5,"reps":"20","baseWeight":90,"unit":"kg"}]},{"id":"rdl-abd-tue-apr","name":"Romanian DL + Hip Abductions","exercises":[{"id":"romanian-dl-tue-apr","name":"Romanian DL","baseSets":3,"reps":"8","baseWeight":70,"unit":"kg"},{"id":"hip-abductions-tue-apr","name":"Hip Abductions","baseSets":3,"reps":"12","baseWeight":60,"unit":"kg"}]},{"id":"spin-tue-apr","name":"Spinning","exercises":[{"id":"spinning-tue-apr","name":"Spinning","baseSets":1,"reps":"45","baseWeight":0,"unit":"min","trackWatts":true}]}]},"Wed":{"label":"Rest / Zone 2 / Mobility","supersets":[]},"Thu":{"label":"Legs + Spinning","supersets":[{"id":"pullups-thu-apr","name":"Pull-ups","exercises":[{"id":"pull-ups-thu-apr","name":"Pull-ups","baseSets":5,"reps":"8","baseWeight":0,"unit":"BW","trackGrip":true}]},{"id":"pfsq-calf-thu-apr","name":"Plate Front Squat + Calf Raises","exercises":[{"id":"plate-front-squat-thu-apr","name":"Plate Front Squat","baseSets":5,"reps":"12","baseWeight":15,"unit":"kg"},{"id":"calf-raises-thu-apr","name":"Calf Raises","baseSets":5,"reps":"20","baseWeight":90,"unit":"kg"}]},{"id":"rdl-abd-thu-apr","name":"Romanian DL + Hip Abductions","exercises":[{"id":"romanian-dl-thu-apr","name":"Romanian DL","baseSets":3,"reps":"8","baseWeight":70,"unit":"kg"},{"id":"hip-abductions-thu-apr","name":"Hip Abductions","baseSets":3,"reps":"12","baseWeight":60,"unit":"kg"}]},{"id":"spin-thu-apr","name":"Spinning","exercises":[{"id":"spinning-thu-apr","name":"Spinning","baseSets":1,"reps":"45","baseWeight":0,"unit":"min","trackWatts":true}]}]},"Fri":{"label":"Upper Body","supersets":[{"id":"fp-dips-fri-apr","name":"Face Pulls + Dips","exercises":[{"id":"face-pulls-fri-apr","name":"Face Pulls","baseSets":5,"reps":"12","baseWeight":3.75,"unit":"kg"},{"id":"dips-fri-apr","name":"Dips","baseSets":5,"reps":"10","baseWeight":0,"unit":"BW+kg"}]},{"id":"lat-curls-fri-apr","name":"DB Lateral Raises + Cable Hammer Curls","exercises":[{"id":"db-lat-raises-fri-apr","name":"Dumbbell Lateral Raises","baseSets":5,"reps":"12","baseWeight":4,"unit":"kg"},{"id":"cable-hammer-curls-fri-apr","name":"Cable Hammer Curls","baseSets":5,"reps":"12","baseWeight":16,"unit":"kg"}]},{"id":"wrist-push-fri-apr","name":"Wrist Rollers + Push-ups","exercises":[{"id":"wrist-rollers-fri-apr","name":"Wrist Rollers","baseSets":2,"reps":"2 min","baseWeight":5,"unit":"kg"},{"id":"push-ups-fri-apr","name":"Push-ups","baseSets":2,"reps":"12","baseWeight":0,"unit":"BW"}]}]},"Sat":{"label":"Rest / Zone 2 / Mobility","supersets":[]},"Sun":{"label":"Rest / Zone 2 / Mobility","supersets":[]}}}]');
 
 
 // ─── MUSCLE MAPPING ─────────────────────────────────────────────────────────
@@ -263,6 +285,20 @@ function parseMeals(text) {
 }
 
 // ─── CLAUDE API ─────────────────────────────────────────────────────────────
+async function askClaude(apiKey, prompt, maxTokens=600, imageData) {
+  if(!apiKey) return "No API key set. Add your Claude API key in Settings → Profile.";
+  const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),15000);
+  try {
+    const content=imageData?[{type:"image",source:{type:"base64",media_type:imageData.type||"image/jpeg",data:imageData.data}},{type:"text",text:prompt}]:prompt;
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal:controller.signal,
+      headers:{"Content-Type":"application/json","x-api-key":apiKey,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTokens,messages:[{role:"user",content}]})});
+    clearTimeout(timer);
+    if(!r.ok){const e=await r.json().catch(()=>({}));return `API error: ${e.error?.message||r.status}`;}
+    const d=await r.json();return(d.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+  } catch(e){clearTimeout(timer);return e.name==="AbortError"?"Request timed out (15s). Try again.":"Connection error.";}
+}
+
 function parseZ2Ride(text) {
   const line=text.trim().split("\n").find(l=>l.startsWith("Z2|"));if(!line)return null;
   const p=line.split("|");const date=p[1]||todayStr();const durParts=(p[2]||"0:00").split(":");
@@ -368,12 +404,19 @@ const FRAME_BACK=["M209,8 Q215,6 221,8 Q227,14 226,24 Q225,30 221,32 L209,32 Q20
 const FRONT_SIL="M72,40 L64,42 Q58,44 54,48 L53,54 Q53,62 53,68 L54,78 Q56,88 58,96 L60,104 Q62,110 64,116 Q66,122 66,128 L66,164 Q66,166 66,168 Q64,178 66,188 L66,202 L76,202 L78,160 L80,118 L82,160 L84,202 L94,202 Q96,198 94,188 Q96,178 94,168 Q94,166 94,164 L94,128 Q94,122 96,116 Q98,110 100,104 L102,96 Q104,88 106,78 L107,68 Q107,62 107,54 L106,48 Q102,44 96,42 L88,40 Z";
 const FRONT_Z=[["shoulders","M58,42 Q54,40 52,44 Q48,48 46,56 L50,60 Q54,58 58,56 L64,50 Q66,46 72,42 Q66,42 62,42 Z"],["shoulders","M102,42 Q106,40 108,44 Q112,48 114,56 L110,60 Q106,58 102,56 L96,50 Q94,46 88,42 Q94,42 98,42 Z"],["chest","M64,50 L58,56 Q55,60 53,64 L55,74 Q62,80 70,82 L80,84 L90,82 Q98,80 105,74 L107,64 Q105,60 102,56 L96,50 Q90,46 80,44 Q70,46 64,50 Z"],["biceps","M46,56 Q43,60 40,68 L38,80 Q36,88 38,94 L44,92 Q48,86 49,78 L50,66 L50,60 Z"],["biceps","M114,56 Q117,60 120,68 L122,80 Q124,88 122,94 L116,92 Q112,86 111,78 L110,66 L110,60 Z"],["forearms","M38,94 L36,100 Q34,108 34,114 L36,116 L40,118 Q43,112 46,104 L44,92 Z"],["forearms","M122,94 L124,100 Q126,108 126,114 L124,116 L120,118 Q117,112 114,104 L116,92 Z"],["abs","M70,82 L80,84 L90,82 Q92,92 92,100 L90,110 Q86,116 80,118 Q74,116 70,110 L68,100 Q68,92 70,82 Z"],["quads","M70,110 Q74,116 80,118 L80,118 L78,160 Q76,166 72,166 L66,164 Q64,158 66,148 L68,132 Z"],["quads","M90,110 Q86,116 80,118 L80,118 L82,160 Q84,166 88,166 L94,164 Q96,158 94,148 L92,132 Z"],["calves","M66,168 Q70,166 74,168 Q78,176 76,188 L74,198 Q72,202 70,202 L66,202 Q66,198 66,188 Q64,178 66,168 Z"],["calves","M94,168 Q90,166 86,168 Q82,176 84,188 L86,198 Q88,202 90,202 L94,202 Q94,198 94,188 Q96,178 94,168 Z"]];
 const BACK_Z=[["shoulders","M193,42 Q189,40 187,44 Q183,48 181,56 L185,60 Q189,58 193,56 L199,50 Q201,46 207,42 Q201,42 197,42 Z"],["shoulders","M237,42 Q241,40 243,44 Q247,48 249,56 L245,60 Q241,58 237,56 L231,50 Q229,46 223,42 Q229,42 233,42 Z"],["lats","M199,50 L193,56 Q190,60 188,64 L190,74 Q196,84 198,94 L200,102 Q206,110 215,112 Q224,110 230,102 L232,94 Q234,84 240,74 L242,64 Q240,60 237,56 L231,50 Q225,46 215,44 Q205,46 199,50 Z"],["triceps","M181,56 Q178,60 175,68 L173,80 Q171,88 173,94 L179,92 Q183,86 184,78 L185,66 L185,60 Z"],["triceps","M249,56 Q252,60 255,68 L257,80 Q259,88 257,94 L251,92 Q247,86 246,78 L245,66 L245,60 Z"],["forearms","M173,94 L171,100 Q169,108 169,114 L171,116 L175,118 Q178,112 181,104 L179,92 Z"],["forearms","M257,94 L259,100 Q261,108 261,114 L259,116 L255,118 Q252,112 249,104 L251,92 Z"],["glutes","M200,102 Q206,110 215,112 Q224,110 230,102 L232,114 Q228,122 222,126 L215,128 L208,126 Q202,122 198,114 Z"],["hamstrings","M198,114 Q202,122 208,126 L215,128 L213,162 Q210,168 206,168 L200,166 Q198,160 200,148 L200,132 Z"],["hamstrings","M232,114 Q228,122 222,126 L215,128 L217,162 Q220,168 224,168 L230,166 Q232,160 230,148 L230,132 Z"],["calves","M200,170 Q204,168 208,170 Q212,178 210,190 L209,200 Q207,204 205,204 L201,204 Q201,200 201,190 Q199,180 200,170 Z"],["calves","M230,170 Q226,168 222,170 Q218,178 220,190 L221,200 Q223,204 225,204 L229,204 Q229,200 229,190 Q231,180 230,170 Z"]];
-function BodySVG({counts,onSelect,selected,colorFn}) {
+function BodySVG({counts,onSelect,selected,colorFn,cardio}) {
   const mc=m=>(colorFn||volColor)(counts[m]||0);
   const Zone=({k,d})=><path d={d} fill={mc(k)} stroke="#2a2520" strokeWidth={1.2} opacity={selected===k?1:0.85} onClick={()=>onSelect(k)} style={{cursor:"pointer",transition:"all 0.15s ease"}}/>;
   const Frame=({paths})=>paths.map((d,i)=><path key={i} d={d} fill="#3d3832" stroke="#2a2520" strokeWidth={1}/>);
   return(
     <svg viewBox="18 0 274 224" style={{width:"100%",maxWidth:280,display:"block",margin:"0 auto"}}>
+      {(()=>{if(!cardio||cardio.total<=0)return null;const pct=Math.min(cardio.total/360,1);const legPct=Math.min(cardio.legMin/180,1);const op=0.15+pct*0.45;const r=8+pct*16;const legOp=0.1+legPct*0.4;const legR=6+legPct*14;const col=pct<0.5?"#3b82f6":pct<0.83?"#06b6d4":"#22d3ee";return<>
+        <defs><filter id="cg"><feGaussianBlur stdDeviation={r}/></filter><filter id="lg"><feGaussianBlur stdDeviation={legR}/></filter></defs>
+        <ellipse cx="80" cy="120" rx="40" ry="90" fill={col} opacity={op} filter="url(#cg)"/>
+        <ellipse cx="215" cy="120" rx="40" ry="90" fill={col} opacity={op*0.8} filter="url(#cg)"/>
+        {legPct>0&&<><ellipse cx="80" cy="170" rx="22" ry="40" fill="#f59e0b" opacity={legOp} filter="url(#lg)"/>
+          <ellipse cx="215" cy="170" rx="22" ry="40" fill="#f59e0b" opacity={legOp*0.8} filter="url(#lg)"/></>}
+      </>;})()}
       <path d={FRONT_SIL} fill="#3d3832" stroke="#2a2520" strokeWidth={0.7}/>
       <Frame paths={FRAME_FRONT}/><Frame paths={FRAME_BACK}/>
       {FRONT_Z.map(([k,d],i)=><Zone key={`f${i}`} k={k} d={d}/>)}
@@ -381,6 +424,7 @@ function BodySVG({counts,onSelect,selected,colorFn}) {
       {selected&&[...FRONT_Z,...BACK_Z].filter(([k])=>k===selected).map(([,d],i)=><path key={`sel${i}`} d={d} fill="none" stroke="#fff" strokeWidth={2} pointerEvents="none"/>)}
       <text x="80" y="220" textAnchor="middle" fill="#887f73" fontSize="8" fontWeight="600" letterSpacing="1">FRONT</text>
       <text x="215" y="220" textAnchor="middle" fill="#887f73" fontSize="8" fontWeight="600" letterSpacing="1">BACK</text>
+      {cardio&&cardio.total>0&&<text x="147" y="12" textAnchor="middle" fill={cardio.total>=360?"#22d3ee":cardio.total>=180?"#06b6d4":"#3b82f6"} fontSize="7" fontWeight="700" fontFamily="monospace">{Math.round(cardio.total)} min cardio</text>}
     </svg>);
 }
 
@@ -388,19 +432,25 @@ function BodySVG({counts,onSelect,selected,colorFn}) {
 function ExGrid({supersets,sets,onChange,onDone,bw,mesoWeek,onAdd,onRemove,onMove,onSwap,exFeel,onExFeel,exNotes,onExNote,exReg}) {
   const [swapId,setSwapId]=useState(null),[swapText,setSwapText]=useState("");
   const [noteOpen,setNoteOpen]=useState(null);
+  const [openSS,setOpenSS]=useState({});
   const swapMatches=swapText.trim().length>=2?Object.values(exReg||{}).filter(e=>e.name.toLowerCase().includes(swapText.trim().toLowerCase())).slice(0,5):[];
   return supersets.map((ss,si)=>{
     const isSS=ss.exercises.length>1, numS=(sets[ss.exercises[0]?.id]||[]).length||0;
+    const isOpen=openSS[ss.id]!==undefined?openSS[ss.id]:false;
+    const doneSets=ss.exercises[0]?.id?((sets[ss.exercises[0].id]||[]).filter(s=>s.done).length):0;
+    const hasSomeData=ss.exercises.some(ex=>(sets[ex.id]||[]).some(s=>s.done||s.weight||s.avgWatts));
     return(
-      <div key={ss.id} style={{background:C.card,borderRadius:12,marginBottom:10,overflow:"hidden",border:`1px solid ${C.border}`,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-        <div style={{background:C.dark,padding:"7px 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div key={ss.id} style={{background:C.card,borderRadius:12,marginBottom:10,overflow:"hidden",border:`1px solid ${isOpen?C.yellow:hasSomeData?C.green:C.border}`,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+        <div onClick={()=>setOpenSS(p=>({...p,[ss.id]:!p[ss.id]}))} style={{background:C.dark,padding:"7px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
           <span style={{fontSize:12,fontWeight:700,color:"#fff",fontFamily:SANS}}>{ss.name}</span>
           <div style={{display:"flex",alignItems:"center",gap:4}}>
+            {hasSomeData&&<span style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontFamily:MONO}}>{doneSets}/{numS}</span>}
             {isSS&&<span style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontFamily:SANS}}>SS</span>}
-            {onMove&&<>{si>0&&<span onClick={()=>onMove(si,-1)} style={{cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:12,padding:"0 3px"}}>↑</span>}{si<supersets.length-1&&<span onClick={()=>onMove(si,1)} style={{cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:12,padding:"0 3px"}}>↓</span>}</>}
+            {isOpen&&onMove&&<>{si>0&&<span onClick={e=>{e.stopPropagation();onMove(si,-1);}} style={{cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:12,padding:"0 3px"}}>↑</span>}{si<supersets.length-1&&<span onClick={e=>{e.stopPropagation();onMove(si,1);}} style={{cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:12,padding:"0 3px"}}>↓</span>}</>}
+            <span style={{fontSize:10,color:"rgba(255,255,255,0.5)",transition:"transform 0.2s",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:isSS?"1fr 1fr auto":"1fr auto",padding:"6px 12px 4px",borderBottom:`1px solid ${C.border}`}}>
+        {isOpen&&<div style={{display:"grid",gridTemplateColumns:isSS?"1fr 1fr auto":"1fr auto",padding:"6px 12px 4px",borderBottom:`1px solid ${C.border}`}}>
           {ss.exercises.map(ex=>(<div key={ex.id}>
               <div style={{display:"flex",alignItems:"center",gap:4}}>
                 {swapId===ex.id?(<div style={{position:"relative"}}>
@@ -419,7 +469,7 @@ function ExGrid({supersets,sets,onChange,onDone,bw,mesoWeek,onAdd,onRemove,onMov
                       style={{fontSize:12,cursor:"pointer",opacity:exNotes?.[ex.id]?1:0.35}}>💬</span>}
                     {onExFeel&&<span onClick={()=>{const cur=exFeel?.[ex.id]||"";const cycle={"":"more","more":"growth","growth":"ok","ok":"twinge","twinge":"pain","pain":"less","less":""};onExFeel(ex.id,cycle[cur]||"");}}
                       style={{fontSize:12,cursor:"pointer",opacity:exFeel?.[ex.id]?1:0.3}}>
-                      {{"more":"➕","growth":"💪","ok":"💚","twinge":"⚠️","pain":"🔴","less":"➖"}[exFeel?.[ex.id]]||"◽"}</span>}
+                      {({more:"➕",growth:"💪",ok:"💚",twinge:"⚠️",pain:"🔴",less:"➖"}[exFeel?.[ex.id]]||"◽")}</span>}
                   </div>
                 </>)}
               </div>
@@ -465,13 +515,13 @@ function ExGrid({supersets,sets,onChange,onDone,bw,mesoWeek,onAdd,onRemove,onMov
               </button>
             </div>);
         })}
-        {onAdd&&<div style={{display:"flex",justifyContent:"center",gap:16,padding:"5px 0"}}>{onRemove&&numS>1&&<span onClick={()=>onRemove(ss)} style={{fontSize:11,color:C.red,cursor:"pointer",fontFamily:SANS}}>− set</span>}<span onClick={()=>onAdd(ss)} style={{fontSize:11,color:C.textDim,cursor:"pointer",fontFamily:SANS}}>+ set</span></div>}
+        {onAdd&&<div style={{display:"flex",justifyContent:"center",gap:16,padding:"5px 0"}}>{onRemove&&numS>1&&<span onClick={()=>onRemove(ss)} style={{fontSize:11,color:C.red,cursor:"pointer",fontFamily:SANS}}>− set</span>}<span onClick={()=>onAdd(ss)} style={{fontSize:11,color:C.textDim,cursor:"pointer",fontFamily:SANS}}>+ set</span></div>}}
       </div>);
   });
 }
 
 // ─── HOME ───────────────────────────────────────────────────────────────────
-function Home({health,saveH,plan,gym,ftp,idMap,exReg,z2Target,onGoToDate,onBackup,onRestore,onDownload,onChatDump}) {
+function Home({health,saveH,plan,gym,ftp,idMap,exReg,z2Target,profile,onGoToDate,onBackup,onRestore,onDownload,onChatDump}) {
   const [wt,setWt]=useState("");const [mood,setMood]=useState("3");const [ready,setReady]=useState("3");const [ss,setSs]=useState(null);const [z2,setZ2]=useState("");const [restHR,setRestHR]=useState("");
   const healthRef=useRef(health);healthRef.current=health;
   useEffect(()=>{const e=health.find(e=>e.date===todayStr());if(e){if(e.weight)setWt(e.weight);if(e.mood)setMood(e.mood);if(e.readiness)setReady(e.readiness);if(e.z2)setZ2(String(e.z2));if(e.restHR)setRestHR(String(e.restHR));}},[health]);
@@ -490,20 +540,19 @@ function Home({health,saveH,plan,gym,ftp,idMap,exReg,z2Target,onGoToDate,onBacku
     setTimeout(()=>setSs(null),2500);
   };
   const lw=[...health].reverse().find(e=>e.weight)?.weight;
-  const toGo=lw?(parseFloat(lw)-79).toFixed(1):null;
+  const wTarget=profile?.weightTarget||PD.weightTarget;
+  const toGo=lw?(parseFloat(lw)-wTarget).toFixed(1):null;
   const latBW=lw?parseFloat(lw):85.3; const ftpV=ftp||162;
   return(
     <div style={{paddingBottom:32}}>
       <div style={{background:`linear-gradient(135deg,${C.dark} 0%,#2a2018 100%)`,borderRadius:16,padding:"20px 18px",marginBottom:14}}>
         <div style={{fontSize:10,letterSpacing:1.5,color:"rgba(255,255,255,0.4)",textTransform:"uppercase",marginBottom:4,fontFamily:SANS}}>{new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long"})}</div>
-        <div style={{fontSize:22,fontWeight:700,color:"#fff",marginBottom:4,fontFamily:SANS}}>Good morning, Richard</div>
-        <div style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginBottom:14,fontFamily:SANS}}>Morning Check-in</div>
-        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-          <input type="number" step="0.1" value={wt} onChange={e=>setWt(e.target.value)} placeholder={lw||"85.3"} onKeyDown={e=>e.key==="Enter"&&doSave()}
-            style={{width:"58%",background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 6px",color:"#fff",fontSize:16,fontWeight:700,fontFamily:MONO,outline:"none",textAlign:"center",boxSizing:"border-box"}}/>
-          <input type="number" value={restHR} onChange={e=>setRestHR(e.target.value)} placeholder="❤️ rHR" onKeyDown={e=>e.key==="Enter"&&doSave()}
-            style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 6px",color:"#fff",fontSize:13,fontWeight:700,fontFamily:MONO,outline:"none",textAlign:"center"}}/>
-        </div>
+        <div style={{fontSize:22,fontWeight:700,color:"#fff",marginBottom:4,fontFamily:SANS}}>Good morning{profile?.name?`, ${profile.name}`:""}</div>
+        {!profile?.name?<div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginBottom:14,fontFamily:SANS}}>👋 New here? Tap ⚙️ → Profile to set up, or read the <a href="https://richardmcdowall-glitch.github.io/ClaudeFit/README.html" target="_blank" rel="noopener" style={{color:C.yellow}}>README</a>.</div>:<div style={{fontSize:12,color:"rgba(255,255,255,0.5)",marginBottom:14,fontFamily:SANS}}>Morning Check-in</div>}
+        {(()=>{const ci={background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"10px 6px",color:"#fff",fontSize:14,fontWeight:700,fontFamily:MONO,outline:"none",textAlign:"center",boxSizing:"border-box",width:"100%",minWidth:0};return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:10}}>
+          <input type="number" step="0.1" value={wt} onChange={e=>setWt(e.target.value)} placeholder={lw||"85.3"} onKeyDown={e=>e.key==="Enter"&&doSave()} style={ci}/>
+          <input type="number" value={restHR} onChange={e=>setRestHR(e.target.value)} placeholder="❤️ rHR" onKeyDown={e=>e.key==="Enter"&&doSave()} style={ci}/>
+        </div>;})()}
         {(()=>{const te=health.find(e=>e.date===todayStr());const tz=Number(te?.z2)||0;return tz>0?<div style={{fontSize:10,color:"rgba(255,255,255,0.5)",fontFamily:MONO,marginBottom:8,textAlign:"right"}}>Z2 today: {tz} min</div>:null;})()}
         {[["Mood",moodEmoji,mood,setMood],["Readiness",readyEmoji,ready,setReady]].map(([l,fn,v,set])=>(
           <div key={l} style={{marginBottom:10}}>
@@ -512,23 +561,20 @@ function Home({health,saveH,plan,gym,ftp,idMap,exReg,z2Target,onGoToDate,onBacku
             </div>
             <input type="range" min={1} max={5} step={1} value={v} onChange={e=>set(e.target.value)} style={{width:"100%",accentColor:C.yellow}}/>
           </div>))}
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{width:"58%",display:"flex",alignItems:"center",gap:6}}>
-            <button onClick={doSave} disabled={!wt&&!z2&&!restHR} style={{...sty.btn(C.accent),opacity:(wt||z2||restHR)?1:0.4}}>Save</button><Status s={ss}/>
-          </div>
-          <input type="number" value={z2} onChange={e=>setZ2(e.target.value)} placeholder="🚴 Z2 min" onKeyDown={e=>e.key==="Enter"&&doSave()}
-            style={{flex:1,background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"8px 6px",color:"#fff",fontSize:13,fontWeight:700,fontFamily:MONO,outline:"none",textAlign:"center"}}/>
-        </div>
+        {(()=>{const ci={background:"rgba(255,255,255,0.1)",border:"1px solid rgba(255,255,255,0.2)",borderRadius:8,padding:"10px 6px",color:"#fff",fontSize:14,fontWeight:700,fontFamily:MONO,outline:"none",textAlign:"center",boxSizing:"border-box",width:"100%",minWidth:0};return <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+          <button onClick={doSave} disabled={!wt&&!z2&&!restHR} style={{background:C.accent,color:C.dark,border:"none",borderRadius:8,padding:"10px 6px",fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:SANS,width:"100%",opacity:(wt||z2||restHR)?1:0.4}}>{ss==="saved"?"✓ Saved":"Save"}</button>
+          <input type="number" value={z2} onChange={e=>setZ2(e.target.value)} placeholder="🚴 Z2 min" onKeyDown={e=>e.key==="Enter"&&doSave()} style={ci}/>
+        </div>;})()}
       </div>
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:14}}>
-        {[{l:"Weight",v:lw?`${lw}kg`:"—",s:"latest"},{l:"To Target",v:toGo?`${toGo}kg`:"—",s:"→ 79kg"},{l:"W/kg",v:(ftpV/latBW).toFixed(2),s:`${ftpV}W FTP`}].map(d=>(
+        {[{l:"Weight",v:lw?`${lw}kg`:"—",s:"latest"},{l:"To Target",v:toGo?`${toGo}kg`:"—",s:`→ ${wTarget}kg`},{l:"W/kg",v:(ftpV/latBW).toFixed(2),s:`${ftpV}W FTP`}].map(d=>(
           <div key={d.l} style={sty.card}>
             <div style={{fontSize:16,fontWeight:700,color:C.text,fontFamily:MONO,textAlign:"center"}}>{d.v}</div>
             <div style={{fontSize:9,color:C.textDim,letterSpacing:0.5,textTransform:"uppercase",textAlign:"center",marginTop:2,fontFamily:SANS}}>{d.l}</div>
             <div style={{fontSize:8,color:C.textDim,textAlign:"center",fontFamily:SANS}}>{d.s}</div>
           </div>))}
       </div>
-      <Analysis gym={gym} health={health} idMap={idMap} exReg={exReg} onGoToDate={onGoToDate}/>
+      <Analysis gym={gym} health={health} idMap={idMap} exReg={exReg} onGoToDate={onGoToDate} profile={profile}/>
       <div style={{textAlign:"center",padding:"18px 0 6px",fontSize:10,color:C.textDim,fontFamily:MONO}}>ClaudeFit v{VER} · {hasLocalStorage?"💾":"⚠️ session only"}</div>
       <div style={{display:"flex",justifyContent:"center",gap:10,paddingBottom:8,flexWrap:"wrap"}}>
         <span onClick={onBackup} style={{fontSize:12,cursor:"pointer",color:C.textDim,fontFamily:SANS}}>💾 Backup</span>
@@ -542,7 +588,7 @@ function Home({health,saveH,plan,gym,ftp,idMap,exReg,z2Target,onGoToDate,onBacku
 
 
 // ─── ANALYSIS ──────────────────────────────────────────────────────────────
-function Analysis({gym,health,idMap,exReg,onGoToDate}) {
+function Analysis({gym,health,idMap,exReg,onGoToDate,profile}) {
   const [sliderOffset,setSliderOffset]=useState(0);
   const [selMuscles,setSelMuscles]=useState([]);
   const [mode,setMode]=useState("volume");
@@ -593,7 +639,7 @@ function Analysis({gym,health,idMap,exReg,onGoToDate}) {
   const minRHR=rhrVals.length?Math.min(...rhrVals):50;
   const rhrRange=maxRHR-minRHR||1;
   const rhrColor=v=>{if(v==null)return HEAT.neutral;const pct=(v-minRHR)/rhrRange;return pct<0.33?HEAT.good:pct<0.66?HEAT.caution:HEAT.concern;};
-  const calColor=v=>v<=0?HEAT.neutral:v<1800?HEAT.caution:v<=2000?HEAT.good:v<=2300?HEAT.caution:HEAT.concern;
+  const cF=profile.calFloor||1800,cC=profile.calCeil||2000;const calColor=v=>v<=0?HEAT.neutral:v<cF?HEAT.caution:v<=cC?HEAT.good:v<=cC+300?HEAT.caution:HEAT.concern;
   // Body map counts for the window
   const bodyCounts=useMemo(()=>{
     const c={},injuries={};
@@ -610,6 +656,12 @@ function Analysis({gym,health,idMap,exReg,onGoToDate}) {
   },[gym,windowDates,idMap,exReg]);
   const injuryColor=n=>!n?HEAT.neutral:n===1?HEAT.caution:n<=3?C.orange:HEAT.concern;
   const activeMuscles=useMemo(()=>Object.keys(MUSCLE_NAMES).filter(m=>(bodyCounts.c[m]||0)>0).sort((a,b)=>(bodyCounts.c[b]||0)-(bodyCounts.c[a]||0)),[bodyCounts]);
+  const cardio=useMemo(()=>{let total=0,legMin=0;windowDates.forEach(ds=>{
+    const he=health.find(e=>e.date===ds);const ge=gym[ds];
+    if(he?.z2)total+=Number(he.z2);
+    if(ge?.z2Ride?.duration)total+=Number(ge.z2Ride.duration);
+    if(ge?.sets){Object.entries(ge.sets).forEach(([,a])=>{a.forEach(s=>{if(s.avgWatts&&Number(s.avgWatts)>0&&s.duration){const m=Number(s.duration)||0;total+=m;legMin+=m;}});});}
+  });return{total,legMin};},[windowDates,gym,health]);
   const gridLine="1px solid rgba(0,0,0,0.05)";
   return(<div>
     {/* Time slider — sticky */}
@@ -704,7 +756,7 @@ function Analysis({gym,health,idMap,exReg,onGoToDate}) {
           <button key={k} onClick={()=>setMode(k)} style={{padding:"4px 12px",borderRadius:6,border:"none",cursor:"pointer",fontFamily:SANS,fontSize:10,fontWeight:600,
             background:mode===k?(k==="volume"?C.green:C.red):"transparent",color:mode===k?"#fff":C.textDim}}>{l}</button>))}
       </div>
-      <BodySVG counts={mode==="volume"?bodyCounts.c:Object.fromEntries(Object.keys(MUSCLE_NAMES).map(m=>[m,bodyCounts.injuries[m]||0]))}
+      <BodySVG counts={mode==="volume"?bodyCounts.c:Object.fromEntries(Object.keys(MUSCLE_NAMES).map(m=>[m,bodyCounts.injuries[m]||0])) } cardio={cardio}
         onSelect={m=>{toggleMuscle(m);setMapMuscle(mapMuscle===m?null:m);}} selected={mapMuscle} colorFn={mode==="injury"?injuryColor:undefined}/>
       <div style={{display:"flex",justifyContent:"center",gap:8,marginTop:4}}>
         {mode==="volume"?[["#e0dbd5","0"],["#c8352e","<5"],["#e6a817","5-9"],["#3a8c5c","10-14"],["#3b6b9d","15+"]].map(([c,l])=>(
@@ -755,7 +807,8 @@ function Analysis({gym,health,idMap,exReg,onGoToDate}) {
 }
 
 
-function Progress({gym,health,plan,ftp,idMap,exReg,z2Target,onGoToDate}) {
+function Progress({gym,health,plan,ftp,idMap,exReg,z2Target,profile,onGoToDate}) {
+  const wTarget=profile?.weightTarget||PD.weightTarget;const calFloor=profile?.calFloor||PD.calFloor;const calCeil=profile?.calCeil||PD.calCeil;const wpkGoal1=profile?.wpk1||PD.wpk1;const wpkGoal2=profile?.wpk2||PD.wpk2;
   const [chartDays,setChartDays]=useState(30);
   const chartCut=useMemo(()=>{if(chartDays>=9999)return null;const d=new Date();d.setDate(d.getDate()-chartDays);return d;},[chartDays]);
   const filterByRange=(arr)=>chartCut?arr.filter(d=>d.date>=chartCut):arr;
@@ -795,9 +848,9 @@ function Progress({gym,health,plan,ftp,idMap,exReg,z2Target,onGoToDate}) {
           background:chartDays===d?C.yellow:"transparent",color:chartDays===d?C.dark:C.textDim,fontWeight:chartDays===d?700:400}}>{d===9999?"All":`${d}d`}</span>))}
       </div>
       {bwData.length>0&&(()=>{const fd=filterByRange(bwData);if(!fd.length)return null;const avg7=fd.map((d,i)=>{const w=fd.slice(Math.max(0,i-6),i+1);return{label:d.label,v:parseFloat((w.reduce((s,x)=>s+x.v,0)/w.length).toFixed(1))};});
-        return <div style={sty.card}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:SANS}}>Body weight trend</span><span style={{fontSize:11,color:C.textDim,fontFamily:MONO}}>Target: 79kg</span></div><LineChart data={fd} color={C.blue} targetLine={79} targetLabel="79kg" avgData={avg7} avgColor={C.teal}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:9,color:C.teal,fontFamily:MONO}}>--- 7d avg: {avg7[avg7.length-1].v}kg</span><span style={{fontSize:11,color:C.textMid,fontFamily:MONO}}>Latest: <b>{fd[fd.length-1].v}kg</b></span></div></div>;})()}
-      {calData.length>0&&(()=>{const fd=filterByRange(calData);if(!fd.length)return null;return <div style={sty.card}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:SANS}}>Calorie intake</span><span style={{fontSize:11,color:C.textDim,fontFamily:MONO}}>1800-2000</span></div><BarChart data={fd} refLines={[{value:1800,color:C.teal},{value:2000,color:C.orange}]} barColor={d=>d.v>=1800&&d.v<=2000?C.green:d.v<1800?C.blue:C.red}/><div style={{fontSize:11,color:C.textMid,textAlign:"right",fontFamily:MONO}}>Latest: <b>{fd[fd.length-1].v}kcal</b></div></div>;})()}
-      {wpkW.length>0&&<div style={sty.card}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:SANS}}>W/kg weekly avg</span><span style={{fontSize:11,color:C.textDim,fontFamily:MONO}}>FTP: {ftpWpk}</span></div><BarChart data={wpkW} targetLine={ftpWpk} targetLabel="FTP" refLines={[{value:2.5,color:C.green},{value:3.0,color:C.purple}]} barColor={d=>d.v>=ftpWpk?C.green:C.blue}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:9,color:C.textDim,fontFamily:MONO}}>2.5=Fit Amateur · 3.0=Club Pro</span><span style={{fontSize:11,color:C.textMid,fontFamily:MONO}}>Latest: <b>{wpkW[wpkW.length-1].v}</b></span></div></div>}
+        return <div style={sty.card}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:SANS}}>Body weight trend</span><span style={{fontSize:11,color:C.textDim,fontFamily:MONO}}>Target: {wTarget}kg</span></div><LineChart data={fd} color={C.blue} targetLine={wTarget} targetLabel={`${wTarget}kg`} avgData={avg7} avgColor={C.teal}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:9,color:C.teal,fontFamily:MONO}}>--- 7d avg: {avg7[avg7.length-1].v}kg</span><span style={{fontSize:11,color:C.textMid,fontFamily:MONO}}>Latest: <b>{fd[fd.length-1].v}kg</b></span></div></div>;})()}
+      {calData.length>0&&(()=>{const fd=filterByRange(calData);if(!fd.length)return null;return <div style={sty.card}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:SANS}}>Calorie intake</span><span style={{fontSize:11,color:C.textDim,fontFamily:MONO}}>{calFloor}-{calCeil}</span></div><BarChart data={fd} refLines={[{value:calFloor,color:C.teal},{value:calCeil,color:C.orange}]} barColor={d=>d.v>=calFloor&&d.v<=calCeil?C.green:d.v<calFloor?C.blue:C.red}/><div style={{fontSize:11,color:C.textMid,textAlign:"right",fontFamily:MONO}}>Latest: <b>{fd[fd.length-1].v}kcal</b></div></div>;})()}
+      {wpkW.length>0&&<div style={sty.card}><div style={{display:"flex",justifyContent:"space-between",marginBottom:6}}><span style={{fontSize:13,fontWeight:600,color:C.text,fontFamily:SANS}}>W/kg weekly avg</span><span style={{fontSize:11,color:C.textDim,fontFamily:MONO}}>FTP: {ftpWpk}</span></div><BarChart data={wpkW} targetLine={ftpWpk} targetLabel="FTP" refLines={[{value:wpkGoal1,color:C.green},{value:wpkGoal2,color:C.purple}]} barColor={d=>d.v>=ftpWpk?C.green:C.blue}/><div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontSize:9,color:C.textDim,fontFamily:MONO}}>{wpkGoal1}=Goal 1 · {wpkGoal2}=Goal 2</span><span style={{fontSize:11,color:C.textMid,fontFamily:MONO}}>Latest: <b>{wpkW[wpkW.length-1].v}</b></span></div></div>}
       {(()=>{const wk={};health.filter(e=>e.z2).forEach(e=>{const dt=new Date(e.date),j4=new Date(dt.getFullYear(),0,4);
         const k=`${dt.getFullYear()}-W${pad(Math.ceil(((dt-j4)/86400000+j4.getDay()+1)/7))}`;wk[k]=(wk[k]||0)+Number(e.z2);});
         Object.entries(gym).forEach(([d,e])=>{if(!e.z2Ride?.duration)return;const dt=new Date(d),j4=new Date(dt.getFullYear(),0,4);
@@ -904,7 +957,7 @@ function Schedule({gym,saveGym,plan,mesoWeek,setMesoWeek,mesoCycle,setMesoCycle,
   const handleDone=(ss,idx)=>{
     const allDone=ss.exercises.every(ex=>sets[ex.id]?.[idx]?.done);
     ss.exercises.forEach(ex=>logSet(ex.id,idx,"done",!allDone));
-    if(!allDone){const isSS=ss.exercises.length>1;const tot=(sets[ss.exercises[0].id]||[]).length;startRest(isSS&&idx<tot-1?60:120);}
+    if(!allDone){startRest(240);}
   };
   const saveDay=(ds,pd)=>{
     const saveBW=bw?Number(bw):getWeight(gym,health);
@@ -1091,7 +1144,7 @@ function Schedule({gym,saveGym,plan,mesoWeek,setMesoWeek,mesoCycle,setMesoCycle,
 }
 
 // ─── GYM TRACKER ────────────────────────────────────────────────────────────
-function Gym({gym,setGym,mesoWeek,setMesoWeek,setMesoStart,mesoCycle,setMesoCycle,plan,health,plans,idMap,exReg,startRest}) {
+function Gym({gym,setGym,mesoWeek,setMesoWeek,setMesoStart,mesoCycle,setMesoCycle,plan,health,plans,idMap,exReg,startRest,onGoToPlans}) {
   const [view,setView]=useState("schedule");const [autoExp,setAutoExp]=useState(0);const [dayRange,setDayRange]=useState(14);const [cycleEdit,setCycleEdit]=useState(null);
   const goToday=()=>{setView("schedule");setAutoExp(c=>c+1);};const meso=MESO[mesoWeek];
   const saveGymCb=useCallback((nl,statusFn)=>{optimisticSave(K.log,nl,setGym,statusFn);},[]);
@@ -1102,16 +1155,16 @@ function Gym({gym,setGym,mesoWeek,setMesoWeek,setMesoStart,mesoCycle,setMesoCycl
   const bubble=(active,label,onClick,color=C.accent)=>(<button onClick={onClick} style={{padding:"7px 16px",borderRadius:20,border:"none",cursor:"pointer",fontFamily:SANS,fontSize:12,fontWeight:600,
     background:active?color:"rgba(0,0,0,0.04)",color:active?(color===C.accent||color===C.yellow?C.dark:"#fff"):C.textDim,boxShadow:active?`0 2px 8px rgba(0,0,0,0.1)`:"none"}}>{label}</button>);
   return(<div>
-    <div style={{display:"flex",gap:6,marginBottom:10,position:"sticky",top:56,zIndex:50,background:"rgba(245,241,236,0.92)",backdropFilter:"blur(8px)",padding:"8px 0",alignItems:"center"}}>
-      {bubble(view==="schedule","Schedule",()=>setView("schedule"))}
+    <div style={{display:"flex",gap:4,marginBottom:10,position:"sticky",top:56,zIndex:50,background:"rgba(245,241,236,0.92)",backdropFilter:"blur(8px)",padding:"8px 0",alignItems:"center",flexWrap:"wrap"}}>
       {bubble(false,"Today",goToday,C.yellow)}
       {bubble(view==="meso",`C${mesoCycle} ${mesoWeek}/3`,()=>setView("meso"),meso.color)}
-      <div style={{marginLeft:"auto",display:"flex",gap:3}}>{[7,14,30,9999].map(d=>(
-        <span key={d} onClick={()=>setDayRange(d)} style={{fontSize:10,fontFamily:MONO,cursor:"pointer",padding:"3px 6px",borderRadius:10,
-          background:dayRange===d?C.yellow:"transparent",color:dayRange===d?C.dark:C.textDim,fontWeight:dayRange===d?700:400}}>{d===9999?"All":`${d}d`}</span>))}</div>
+      {onGoToPlans&&<span onClick={onGoToPlans} style={{fontSize:12,color:C.blue,fontFamily:SANS,fontWeight:600,cursor:"pointer",padding:"7px 10px"}}>Plans</span>}
+      <div style={{marginLeft:"auto",display:"flex",gap:2}}>{[7,14,30,9999].map(d=>(
+        <span key={d} onClick={()=>setDayRange(d)} style={{fontSize:12,fontFamily:SANS,cursor:"pointer",padding:"7px 8px",borderRadius:20,
+          background:dayRange===d?C.yellow:"transparent",color:dayRange===d?C.dark:C.textDim,fontWeight:600}}>{d===9999?"∞":`${d}`}</span>))}</div>
     </div>
     {view==="schedule"&&<Schedule gym={gym} saveGym={saveGymCb} plan={plan} mesoWeek={mesoWeek} setMesoWeek={setMesoWeek} mesoCycle={mesoCycle} setMesoCycle={setMesoCycle} health={health} autoExp={autoExp} plans={plans} dayRange={dayRange} startRest={startRest} idMap={idMap} exReg={exReg}/>}
-    {view==="meso"&&<><div style={{...sty.card,display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+    {view==="meso"&&<><div style={{fontSize:11,color:C.blue,fontFamily:SANS,fontWeight:600,cursor:"pointer",marginBottom:6}} onClick={()=>setView("schedule")}>← Schedule</div><div style={{...sty.card,display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
       <div style={{display:"flex",alignItems:"center",gap:6}}>
         <span style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:SANS}}>Cycle</span>
         {cycleEdit!=null?(<div style={{display:"flex",alignItems:"center",gap:4}}>
@@ -1138,200 +1191,188 @@ class ErrorGuard extends React.Component {
 }
 
 // ─── FOOD ───────────────────────────────────────────────────────────────────
-function Food({health,saveH}) {
-  const [tab,setTab]=useState("notes");const [mealText,setMealText]=useState("");const [parsed,setParsed]=useState(null);const [saveMode,setSaveMode]=useState("add");
-  const [ss,setSs]=useState(null);const [foodNotes,setFoodNotes]=useState("");const [notesSS,setNotesSS]=useState(null);
-  const [favs,setFavs]=useState([]);const [qCal,setQCal]=useState("");const [qProt,setQProt]=useState("");const [qName,setQName]=useState("");const [qDate,setQDate]=useState(todayStr());
-  const [expDate,setExpDate]=useState(null);const [histDays,setHistDays]=useState(7);const [confirmDel,setConfirmDel]=useState(null);const [mealSort,setMealSort]=useState("time");
-  const [searchQ,setSearchQ]=useState("");
-  const [searchAdd,setSearchAdd]=useState(null);const [searchTime,setSearchTime]=useState("");const [searchDate,setSearchDate]=useState(todayStr());
-  const addFromSearch=(meal)=>{
-    const t=searchTime||"";const d=searchDate||todayStr();
-    const line=`MEAL|${d}|${t}|${meal.name}|${meal.calories}|${meal.protein_g||0}|${meal.carbs_g||0}|${meal.fat_g||0}|${meal.description||""}`;
-    setMealText(p=>p?(p+"\n"+line):line);setSearchAdd(null);setSearchTime("");setSearchDate(todayStr());setTab("log");
+function Food({health,saveH,profile}) {
+  const [tab,setTab]=useState("plate");
+  const SEED=[
+    {id:"s1",n:"Chicken breast",cat:"🥩",cal:165,p:31,c:0,f:3.6,g:150},
+    {id:"s2",n:"Salmon",cat:"🥩",cal:208,p:20,c:0,f:13,g:150},
+    {id:"s3",n:"Egg",cat:"🥩",cal:147,p:12.6,c:0.7,f:10.3,g:120},
+    {id:"s4",n:"Ground beef",cat:"🥩",cal:254,p:17.2,c:0,f:20,g:150},
+    {id:"s5",n:"Cod",cat:"🥩",cal:82,p:18,c:0,f:0.7,g:150},
+    {id:"s6",n:"Tuna canned",cat:"🥩",cal:130,p:26,c:0,f:2,g:95},
+    {id:"s7",n:"Turkey",cat:"🥩",cal:135,p:30,c:0,f:1.5,g:150},
+    {id:"s8",n:"Bacon",cat:"🥩",cal:540,p:37,c:0,f:42,g:60},
+    {id:"s9",n:"Ham",cat:"🥩",cal:145,p:21,c:1.5,f:6,g:40},
+    {id:"s10",n:"Protein powder",cat:"🥩",cal:380,p:75,c:7,f:5,g:30},
+    {id:"s11",n:"Prawns",cat:"🥩",cal:100,p:23,c:0,f:1.4,g:140},
+    {id:"s12",n:"Smoked salmon",cat:"🥩",cal:180,p:25,c:0,f:8,g:100},
+    {id:"s13",n:"Whole milk",cat:"🧀",cal:61,p:3.2,c:4.8,f:3.5,g:200},
+    {id:"s14",n:"Skimmed milk",cat:"🧀",cal:35,p:3.5,c:5,f:0.1,g:200},
+    {id:"s15",n:"Yoghurt",cat:"🧀",cal:61,p:3.5,c:4.7,f:3.3,g:150},
+    {id:"s16",n:"Greek yoghurt",cat:"🧀",cal:97,p:9,c:3.6,f:5,g:150},
+    {id:"s17",n:"Cottage cheese",cat:"🧀",cal:98,p:11,c:3.4,f:4.3,g:100},
+    {id:"s18",n:"Cheese",cat:"🧀",cal:402,p:25,c:0.5,f:33,g:30},
+    {id:"s19",n:"Mozzarella",cat:"🧀",cal:280,p:18,c:2,f:22,g:40},
+    {id:"s20",n:"Butter",cat:"🧀",cal:717,p:0.6,c:0.6,f:81,g:10},
+    {id:"s21",n:"Parmesan",cat:"🧀",cal:431,p:38,c:4,f:29,g:15},
+    {id:"s22",n:"Oats",cat:"🍞",cal:379,p:13,c:67,f:6.5,g:50},
+    {id:"s23",n:"Bread",cat:"🍞",cal:265,p:8,c:49,f:3,g:35},
+    {id:"s24",n:"Bread roll",cat:"🍞",cal:267,p:9,c:50,f:3.5,g:88},
+    {id:"s25",n:"Pasta",cat:"🍞",cal:350,p:12,c:72,f:1.5,g:100},
+    {id:"s26",n:"White rice",cat:"🍞",cal:360,p:6.7,c:79,f:0.7,g:80},
+    {id:"s27",n:"Potato",cat:"🍞",cal:77,p:2,c:17,f:0.1,g:150},
+    {id:"s28",n:"Sweet potato",cat:"🍞",cal:86,p:1.6,c:20,f:0.1,g:150},
+    {id:"s29",n:"Couscous",cat:"🍞",cal:376,p:13,c:77,f:0.6,g:80},
+    {id:"s30",n:"Tortilla",cat:"🍞",cal:310,p:8,c:52,f:8,g:65},
+    {id:"s31",n:"Quinoa",cat:"🍞",cal:368,p:14,c:64,f:6,g:100},
+    {id:"s32",n:"Banana",cat:"🍎",cal:89,p:1.1,c:23,f:0.3,g:120},
+    {id:"s33",n:"Apple",cat:"🍎",cal:52,p:0.3,c:14,f:0.2,g:180},
+    {id:"s34",n:"Orange",cat:"🍎",cal:47,p:0.9,c:12,f:0.1,g:130},
+    {id:"s35",n:"Strawberries",cat:"🍎",cal:32,p:0.7,c:7.7,f:0.3,g:100},
+    {id:"s36",n:"Blueberries",cat:"🍎",cal:57,p:0.7,c:14,f:0.3,g:80},
+    {id:"s37",n:"Grapes",cat:"🍎",cal:69,p:0.7,c:18,f:0.2,g:80},
+    {id:"s38",n:"Avocado",cat:"🍎",cal:160,p:2,c:8.5,f:15,g:75},
+    {id:"s39",n:"Mango",cat:"🍎",cal:60,p:0.8,c:15,f:0.4,g:100},
+    {id:"s40",n:"Tomato",cat:"🥦",cal:18,p:0.9,c:3.9,f:0.2,g:100},
+    {id:"s41",n:"Onion",cat:"🥦",cal:40,p:1.1,c:9.3,f:0.1,g:60},
+    {id:"s42",n:"Broccoli",cat:"🥦",cal:34,p:2.8,c:7,f:0.4,g:100},
+    {id:"s43",n:"Spinach",cat:"🥦",cal:23,p:2.9,c:3.6,f:0.4,g:50},
+    {id:"s44",n:"Salad",cat:"🥦",cal:15,p:1.3,c:2.2,f:0.2,g:30},
+    {id:"s45",n:"Cucumber",cat:"🥦",cal:15,p:0.7,c:3.6,f:0.1,g:60},
+    {id:"s46",n:"Pepper",cat:"🥦",cal:31,p:1,c:6,f:0.3,g:100},
+    {id:"s47",n:"Mushrooms",cat:"🥦",cal:22,p:3.1,c:3.3,f:0.3,g:80},
+    {id:"s48",n:"Carrot",cat:"🥦",cal:41,p:0.9,c:10,f:0.2,g:80},
+    {id:"s49",n:"Sweetcorn",cat:"🥦",cal:86,p:3.3,c:19,f:1.2,g:80},
+    {id:"s50",n:"Peas",cat:"🥦",cal:81,p:5.4,c:14,f:0.4,g:60},
+    {id:"s51",n:"Kidney beans",cat:"🥦",cal:127,p:8.7,c:22.8,f:0.5,g:100},
+    {id:"s52",n:"Lentils",cat:"🥦",cal:116,p:9,c:20,f:0.4,g:150},
+    {id:"s53",n:"Chickpeas",cat:"🥦",cal:164,p:8.9,c:27,f:2.6,g:120},
+    {id:"s54",n:"Olives",cat:"🥦",cal:145,p:1,c:3.8,f:15,g:30},
+    {id:"s55",n:"Mixed nuts",cat:"🌰",cal:520,p:16,c:20,f:45,g:30},
+    {id:"s56",n:"Almonds",cat:"🌰",cal:579,p:21,c:22,f:50,g:25},
+    {id:"s57",n:"Peanut butter",cat:"🌰",cal:588,p:25,c:20,f:50,g:20},
+    {id:"s58",n:"Olive oil",cat:"🍯",cal:884,p:0,c:0,f:100,g:14},
+    {id:"s59",n:"Mayo",cat:"🍯",cal:680,p:1,c:0.6,f:75,g:15},
+    {id:"s60",n:"Ketchup",cat:"🍯",cal:112,p:1.2,c:26,f:0.1,g:15},
+    {id:"s61",n:"Honey",cat:"🍯",cal:304,p:0.3,c:82,f:0,g:10},
+    {id:"s62",n:"Jam",cat:"🍯",cal:250,p:0.3,c:62,f:0.1,g:15},
+    {id:"s63",n:"Brunost",cat:"🍯",cal:466,p:10,c:43,f:28,g:20},
+    {id:"s64",n:"Leverpostei",cat:"🍯",cal:250,p:11,c:6,f:20,g:30},
+    {id:"s65",n:"Freia chocolate",cat:"🍯",cal:546,p:7.5,c:57.5,f:31.5,g:30},
+    {id:"s66",n:"Kvikk Lunsj",cat:"🍯",cal:520,p:6,c:60,f:28,g:47}
+  ];
+  const [q,setQ]=useState("");
+  const [plate,setPlate]=useState([]);
+  const [mn,setMN]=useState("");
+  const [md,setMD]=useState(todayStr());
+  const [mt,setMT]=useState("");
+  const [qc,setQC]=useState("");const [qp,setQP]=useState("");const [qn,setQN]=useState("");
+  const [exp,setExp]=useState(null);const [hd,setHd]=useState(7);
+  const [ss,setSs]=useState(null);
+
+  useEffect(()=>{const h=(e)=>{setTab("history");setHd(9999);setExp(e.detail);};window.addEventListener("claudefit-goto-food",h);return()=>window.removeEventListener("claudefit-goto-food",h);},[]);
+
+  const matches=q.trim().length<2?[]:SEED.filter(i=>i.n.toLowerCase().includes(q.trim().toLowerCase())).slice(0,15);
+  const totals=plate.reduce((a,x)=>{const m=(x.g||0)/100;return{cal:a.cal+x.cal*m,p:a.p+x.p*m,c:a.c+x.c*m,f:a.f+x.f*m};},{cal:0,p:0,c:0,f:0});
+  const T={cal:Math.round(totals.cal),p:Math.round(totals.p*10)/10,c:Math.round(totals.c*10)/10,f:Math.round(totals.f*10)/10};
+
+  const addIng=(i)=>{setPlate([...plate,{...i}]);setQ("");};
+  const updG=(idx,v)=>{const p2=[...plate];p2[idx]={...p2[idx],g:Number(v)||0};setPlate(p2);};
+  const rm=(idx)=>{setPlate(plate.filter((_,i)=>i!==idx));};
+
+  const saveMeals=(meals)=>{
+    setSs("saving");
+    const byDate={};
+    meals.forEach(m=>{if(!byDate[m.date])byDate[m.date]=[];byDate[m.date].push(m);});
+    let nl=[...health];
+    Object.entries(byDate).forEach(([date,ms])=>{
+      const ex=nl.find(e=>e.date===date)||{date,weight:"",mood:"3",readiness:"3",notes:""};
+      const all=[...(ex.meals||[]),...ms];
+      const t=all.reduce((a,m)=>({cal:a.cal+m.calories,p:a.p+m.protein_g,f:a.f+m.fat_g,c:a.c+m.carbs_g}),{cal:0,p:0,f:0,c:0});
+      nl=[...nl.filter(e=>e.date!==date),{...ex,meals:all,calories:String(Math.round(t.cal)),protein:String(Math.round(t.p)),fat:String(Math.round(t.f)),carbs:String(Math.round(t.c))}];
+    });
+    nl.sort((a,b)=>a.date.localeCompare(b.date));
+    saveH(nl,s=>{setSs(s);if(s==="saved"){setPlate([]);setMN("");setMD(todayStr());setMT("");setTimeout(()=>{setSs(null);setTab("history");},1500);}else setTimeout(()=>setSs(null),2500);});
   };
-  // Build personal food database from meal history
-  const foodDb=useMemo(()=>{
-    const db={};
-    health.forEach(e=>{(e.meals||[]).forEach(m=>{
-      const key=(m.name||"").toLowerCase().trim();if(!key||!m.calories)return;
-      if(!db[key])db[key]={name:m.name,cal:[],prot:[],fat:[],carbs:[],desc:m.description||""};
-      db[key].cal.push(m.calories);db[key].prot.push(m.protein_g||0);db[key].fat.push(m.fat_g||0);db[key].carbs.push(m.carbs_g||0);
-      if(m.description&&m.description.length>db[key].desc.length)db[key].desc=m.description;
-    });});
-    return Object.values(db).map(f=>({name:f.name,cal:Math.round(f.cal.reduce((a,b)=>a+b,0)/f.cal.length),
-      prot:Math.round(f.prot.reduce((a,b)=>a+b,0)/f.prot.length),fat:Math.round(f.fat.reduce((a,b)=>a+b,0)/f.fat.length),
-      carbs:Math.round(f.carbs.reduce((a,b)=>a+b,0)/f.carbs.length),count:f.cal.length,desc:f.desc})).sort((a,b)=>b.count-a.count);
-  },[health]);
-  const qMatches=qName.trim().length>=2?foodDb.filter(f=>f.name.toLowerCase().includes(qName.trim().toLowerCase())).slice(0,5):[];
-  useEffect(()=>{load(K.foodNotes).then(d=>{if(d)setFoodNotes(d);});load(K.favMeals).then(d=>{if(d)setFavs(d);});},[]);
-  useEffect(()=>{const handler=(e)=>{setTab("history");setHistDays(9999);setExpDate(e.detail);};window.addEventListener("claudefit-goto-food",handler);return()=>window.removeEventListener("claudefit-goto-food",handler);},[]);
-  const saveNotes=(t)=>{setFoodNotes(t);optimisticSave(K.foodNotes,t,null,s=>{setNotesSS(s);setTimeout(()=>setNotesSS(null),2000);});};
-  const addFav=async(m)=>{const u=[...favs,{...m,id:`fav_${Date.now()}`}];setFavs(u);await save(K.favMeals,u);};
-  const rmFav=async(id)=>{const u=favs.filter(f=>f.id!==id);setFavs(u);await save(K.favMeals,u);};
-  const logFav=(m)=>{const line=`MEAL|${todayStr()}|${m.time||""}|${m.name}|${m.calories}|${m.protein_g}|${m.carbs_g}|${m.fat_g}|${m.description||""}`;setMealText(p=>p?(p+"\n"+line):line);setTab("log");};
-  const quickAdd=()=>{if(!qCal)return;const d=qDate||todayStr();const line=`MEAL|${d}||${qName||"Quick"}|${qCal}|${qProt||0}|0|0|`;setMealText(p=>p?(p+"\n"+line):line);setQCal("");setQProt("");setQName("");setQDate(todayStr());setTab("log");};
-  const confirmSave=async()=>{if(!parsed?.length)return;setSs("saving");const byDate={};parsed.forEach(m=>{if(!byDate[m.date])byDate[m.date]=[];byDate[m.date].push(m);});
-    let nl=[...health];Object.entries(byDate).forEach(([date,meals])=>{const ex=nl.find(e=>e.date===date)||{date,weight:"",mood:"3",readiness:"3",notes:""};
-      const all=saveMode==="add"?[...(ex.meals||[]),...meals]:meals;const t=all.reduce((a,m)=>({cal:a.cal+m.calories,p:a.p+m.protein_g,f:a.f+m.fat_g,c:a.c+m.carbs_g}),{cal:0,p:0,f:0,c:0});
-      nl=[...nl.filter(e=>e.date!==date),{...ex,meals:all,calories:String(Math.round(t.cal)),protein:String(Math.round(t.p)),fat:String(Math.round(t.f)),carbs:String(Math.round(t.c))}];});
-    nl.sort((a,b)=>a.date.localeCompare(b.date));saveH(nl,s=>{setSs(s);if(s==="saved"){setParsed(null);setMealText("");setTimeout(()=>{setSs(null);setTab("history");},1500);}else setTimeout(()=>setSs(null),2500);});};
+
+  const logPlate=()=>{if(!plate.length)return;const m={date:md,time:mt,name:mn||"Plate",calories:T.cal,protein_g:T.p,carbs_g:T.c,fat_g:T.f,description:plate.map(i=>i.n).join(", ")};saveMeals([m]);};
+  const qAdd=()=>{if(!qc)return;const m={date:todayStr(),time:"",name:qn||"Quick",calories:Number(qc),protein_g:Number(qp)||0,carbs_g:0,fat_g:0,description:""};setQC("");setQP("");setQN("");saveMeals([m]);};
+
   return(<div>
-    <div style={{display:"flex",gap:4,marginBottom:12,position:"sticky",top:50,zIndex:50,background:`rgba(245,241,236,0.92)`,backdropFilter:"blur(8px)",padding:"8px 0"}}>{[["notes","Notes"],["history","History"],["search","Search"],["log","Import"]].map(([v,l])=>(<button key={v} onClick={()=>setTab(v)} style={sty.tab(tab===v)}>{l}</button>))}</div>
-    {tab==="notes"&&(<div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div style={sty.card}><div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:8,fontFamily:SANS}}>Food Notes</div>
-        <textarea rows={6} value={foodNotes} onChange={e=>setFoodNotes(e.target.value)} placeholder="morning: 2 eggs on toast&#10;lunch: chicken wrap" style={{width:"100%",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:8,padding:12,color:C.text,fontSize:13,fontFamily:SANS,resize:"vertical",outline:"none",boxSizing:"border-box",lineHeight:1.7}}/>
-        <div style={{display:"flex",gap:6,marginTop:8,flexWrap:"wrap",alignItems:"center"}}>
-          <button onClick={()=>saveNotes(foodNotes)} style={sty.btn(C.surface,true)}>Save</button>
-          <button onClick={()=>{setFoodNotes("");saveNotes("");}} style={sty.btn(C.surface,true)}>Clear</button><Status s={notesSS}/>
-        </div></div>
-      <div style={sty.card}><div style={{fontWeight:700,fontSize:13,color:C.text,marginBottom:8,fontFamily:SANS}}>Quick Add</div>
-        <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
-          <input type="date" value={qDate} onChange={e=>setQDate(e.target.value)} style={{background:C.cardAlt,border:"none",borderBottom:`2px solid ${C.border}`,borderRadius:0,padding:"6px 4px",fontSize:11,color:C.text,fontFamily:MONO,outline:"none"}}/>
-          <input value={qName} onChange={e=>setQName(e.target.value)} placeholder="Name" style={{...sty.input(70),textAlign:"left",flex:2,minWidth:50}}/>
-          <input type="number" value={qCal} onChange={e=>setQCal(e.target.value)} placeholder="kcal" style={sty.input(50)}/>
-          <input type="number" value={qProt} onChange={e=>setQProt(e.target.value)} placeholder="P(g)" style={sty.input(50)}/>
-          <button onClick={quickAdd} disabled={!qCal} style={sty.btn(C.green,true)}>+</button></div>
-        {qMatches.length>0&&<div style={{marginTop:4}}>
-          {qMatches.map(f=>(<div key={f.name} onClick={()=>{setQName(f.name);setQCal(String(f.cal));setQProt(String(f.prot));}}
-            style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 8px",cursor:"pointer",borderBottom:`1px solid ${C.borderLight}`,background:C.cardAlt,borderRadius:4,marginBottom:2}}>
-            <div style={{flex:1,minWidth:0}}>
-              <div style={{fontSize:11,fontWeight:600,color:C.text,fontFamily:SANS}}>{f.name}</div>
-              {f.desc&&<div style={{fontSize:9,color:C.textDim,fontFamily:SANS,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{f.desc}</div>}
-            </div>
-            <div style={{fontSize:10,fontFamily:MONO,color:C.textMid,marginLeft:6,whiteSpace:"nowrap"}}>{f.cal}kcal P{f.prot}g</div>
+    <div style={{display:"flex",gap:4,marginBottom:12}}>
+      {[["plate","Plate"],["quick","Quick+"],["history","History"]].map(([v,l])=>(<button key={v} onClick={()=>setTab(v)} style={sty.tab(tab===v)}>{l}</button>))}
+    </div>
+    {tab==="plate"&&<div>
+      <div style={sty.card}>
+        <div style={{fontSize:13,fontWeight:700,marginBottom:6,color:C.text,fontFamily:SANS}}>Add Ingredient</div>
+        <input value={q} onChange={e=>setQ(e.target.value)} placeholder="salmon, bread, oats..." autoFocus style={{width:"100%",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:8,padding:"8px 10px",fontSize:12,color:C.text,outline:"none",boxSizing:"border-box",fontFamily:SANS}}/>
+        {matches.length>0&&<div style={{marginTop:6,maxHeight:200,overflowY:"auto"}}>
+          {matches.map(i=>(<div key={i.id} onClick={()=>addIng(i)} style={{padding:"6px 8px",borderRadius:6,marginBottom:3,cursor:"pointer",background:C.cardAlt,display:"flex",justifyContent:"space-between"}}>
+            <span style={{fontSize:12,color:C.text,fontFamily:SANS}}>{i.cat} {i.n}</span>
+            <span style={{fontSize:10,color:C.textDim,fontFamily:MONO}}>{i.cal}cal P{i.p}g</span>
           </div>))}
         </div>}
       </div>
-      <div style={sty.card}><div style={{fontWeight:700,fontSize:13,color:C.text,marginBottom:6,fontFamily:SANS}}>Favourites</div>
-        {favs.map(f=>(<div key={f.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:`1px solid ${C.borderLight}`}}>
-          <div><span style={{fontSize:12,fontWeight:600,color:C.text,fontFamily:SANS}}>{f.name}</span><span style={{fontSize:10,color:C.textDim,fontFamily:MONO,marginLeft:6}}>{f.calories}cal P{f.protein_g}g</span></div>
-          <div style={{display:"flex",gap:6}}><span onClick={()=>logFav(f)} style={{fontSize:11,color:C.green,cursor:"pointer"}}>+Log</span><span onClick={()=>rmFav(f.id)} style={{fontSize:11,color:C.red,cursor:"pointer"}}>✕</span></div></div>))}
-        {!favs.length&&<div style={{fontSize:12,color:C.textDim,fontFamily:SANS}}>No favourites yet.</div>}</div>
-    </div>)}
-    {tab==="log"&&(<div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div style={sty.card}><div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:8,fontFamily:SANS}}>Import Meals</div>
-        <textarea rows={5} value={mealText} onChange={e=>setMealText(e.target.value)} placeholder="MEAL|date|time|name|cal|prot|carbs|fat|desc" style={{width:"100%",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:8,padding:10,color:C.text,fontSize:11,fontFamily:MONO,resize:"vertical",outline:"none",boxSizing:"border-box",lineHeight:1.7}}/>
-        <div style={{display:"flex",gap:6,marginTop:8}}><button onClick={()=>{const m=parseMeals(mealText);if(m.length)setParsed(m);}} disabled={!mealText.trim()} style={sty.btn(C.accent,true)}>Preview</button>{parsed&&<button onClick={()=>{setParsed(null);setMealText("");}} style={sty.btn(C.surface,true)}>Clear</button>}</div></div>
-      {parsed&&(<div style={{...sty.card,border:`2px solid ${C.green}`}}><div style={{color:C.green,fontWeight:700,fontSize:13,marginBottom:8,fontFamily:SANS}}>✓ {parsed.length} meal{parsed.length!==1?"s":""}</div>
-        {parsed.map((m,i)=>(<div key={i} style={{fontSize:12,color:C.text,fontFamily:SANS,padding:"3px 0",borderBottom:`1px solid ${C.borderLight}`}}>{m.time&&<span style={{color:C.textDim,fontFamily:MONO}}>{m.time} </span>}{m.name} — {m.calories}cal P{m.protein_g}g</div>))}
-        <div style={{display:"flex",gap:6,alignItems:"center",marginTop:10}}>
-          {[["replace","Replace"],["add","Add to"]].map(([m,l])=>(<button key={m} onClick={()=>setSaveMode(m)} style={sty.tab(saveMode===m)}>{l}</button>))}
-          <button onClick={confirmSave} style={sty.btn(C.green,true)}>Save</button><Status s={ss}/></div></div>)}
-    </div>)}
-    {tab==="history"&&(<div style={sty.card}><div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
-      <span style={{fontWeight:700,fontSize:14,color:C.text,fontFamily:SANS}}>History</span>
-      <div style={{display:"flex",gap:4}}>{[7,14,30,9999].map(d=>(<button key={d} onClick={()=>setHistDays(d)} style={sty.tab(histDays===d)}>{d===9999?"All":`${d}d`}</button>))}</div></div>
-      {(()=>{const cut=new Date();cut.setDate(cut.getDate()-histDays);
-        const filtered=[...health].reverse().filter(e=>new Date(e.date)>=cut&&(e.calories||e.meals?.length));
-        return!filtered.length?<div style={{color:C.textDim,textAlign:"center",padding:20,fontFamily:SANS}}>No entries.</div>
-        :filtered.map(e=>{const isExp=expDate===e.date;
-          const t=e.meals?.reduce((a,m)=>({cal:a.cal+(m.calories||0),p:a.p+(m.protein_g||0),f:a.f+(m.fat_g||0),c:a.c+(m.carbs_g||0)}),{cal:0,p:0,f:0,c:0})||{cal:e.calories||0,p:e.protein||0,f:e.fat||0,c:e.carbs||0};
-          const cal=Math.round(Number(t.cal)||0);
-          const calColor=cal<=0?C.border:cal<1800?C.blue:cal<=2000?C.green:C.red;
-          return(<div key={e.date} style={{marginBottom:8}}>
-            <div onClick={()=>setExpDate(isExp?null:e.date)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 10px",
-              borderRadius:isExp?"8px 8px 0 0":8,border:`1.5px solid ${calColor}`,borderBottom:isExp?"none":`1.5px solid ${calColor}`,
-              cursor:"pointer",background:isExp?C.cardAlt:C.card}}>
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontWeight:700,color:calColor===C.border?C.blue:calColor,fontFamily:MONO,fontSize:12}}>{e.date}</span>
-                {e.weight&&<span style={{fontSize:10,background:"rgba(58,140,92,0.08)",border:"1px solid rgba(58,140,92,0.2)",borderRadius:4,padding:"1px 5px",color:C.green,fontFamily:MONO}}>⚖️{e.weight}kg</span>}
-              </div>
-              <div style={{display:"flex",alignItems:"center",gap:6}}>
-                {t.cal>0&&<span style={{fontSize:11,color:C.text,fontFamily:MONO,fontWeight:600}}>{Math.round(t.cal)}kcal</span>}
-                {t.p>0&&<span style={{fontSize:11,color:C.green,fontFamily:MONO}}>P{Math.round(t.p)}g</span>}
-                {e.mood&&<span style={{fontSize:13}}>{moodEmoji(e.mood)}</span>}
-                <span style={{fontSize:11,color:C.textDim}}>{isExp?"▲":"▼"}</span>
-              </div>
-            </div>
-            {isExp&&(<div style={{border:`1px solid ${C.border}`,borderTop:"none",borderRadius:"0 0 8px 8px",padding:"8px 10px",background:C.card}}>
-              {e.meals?.length>0?(()=>{const sortFn={time:(a,b)=>(a.time||"").localeCompare(b.time||""),protein:(a,b)=>(b.protein_g||0)-(a.protein_g||0),carbs:(a,b)=>(b.carbs_g||0)-(a.carbs_g||0),fat:(a,b)=>(b.fat_g||0)-(a.fat_g||0)};
-              const sorted=[...e.meals].sort(sortFn[mealSort]||sortFn.time);
-              return(<><div style={{display:"flex",gap:3,marginBottom:6}}>{[["time","Time"],["protein","P↓"],["carbs","C↓"],["fat","F↓"]].map(([k,l])=>(<span key={k} onClick={()=>setMealSort(k)} style={{fontSize:9,fontFamily:SANS,fontWeight:600,cursor:"pointer",padding:"2px 6px",borderRadius:5,background:mealSort===k?C.yellow:"transparent",color:mealSort===k?C.dark:C.textDim}}>{l}</span>))}</div>
-              <table style={{width:"100%",borderCollapse:"collapse",fontSize:12}}>
-                <thead><tr style={{borderBottom:`1px solid ${C.border}`}}>
-                  {["Meal","kcal","P","F","C",""].map(h=><th key={h} style={{padding:"5px 4px",textAlign:"left",color:C.textDim,fontSize:10,letterSpacing:0.5,textTransform:"uppercase",fontWeight:400,fontFamily:SANS}}>{h}</th>)}
-                </tr></thead>
-                <tbody>
-                  {sorted.map((m,i)=>(<tr key={i} style={{borderBottom:`1px solid ${C.borderLight}`}}>
-                    <td style={{padding:"5px 4px",fontFamily:SANS}}><div style={{fontWeight:600,color:C.text}}>{m.time&&<span style={{color:C.textDim,fontFamily:MONO,fontSize:10}}>{m.time} </span>}{m.name}</div>
-                      {m.description&&<div style={{color:C.textDim,fontSize:10,marginTop:1,lineHeight:1.4}}>{m.description}</div>}</td>
-                    <td style={{padding:"5px 4px",fontFamily:MONO,fontSize:12}}>{m.calories}</td>
-                    <td style={{padding:"5px 4px",color:C.green,fontFamily:MONO}}>{m.protein_g}g</td>
-                    <td style={{padding:"5px 4px",color:C.orange,fontFamily:MONO}}>{m.fat_g}g</td>
-                    <td style={{padding:"5px 4px",color:C.blue,fontFamily:MONO}}>{m.carbs_g}g</td>
-                    <td style={{padding:"5px 2px"}}><span onClick={()=>addFav(m)} style={{cursor:"pointer",color:C.amber,fontSize:12}}>★</span></td>
-                  </tr>))}
-                  <tr style={{borderTop:`2px solid ${C.border}`,background:C.cardAlt}}>
-                    <td style={{padding:"5px 4px",fontWeight:700,fontFamily:SANS}}>TOTAL</td>
-                    <td style={{padding:"5px 4px",fontWeight:700,fontFamily:MONO}}>{Math.round(t.cal)}</td>
-                    <td style={{padding:"5px 4px",fontWeight:700,color:C.green,fontFamily:MONO}}>{Math.round(t.p)}g</td>
-                    <td style={{padding:"5px 4px",fontWeight:700,color:C.orange,fontFamily:MONO}}>{Math.round(t.f)}g</td>
-                    <td style={{padding:"5px 4px",fontWeight:700,color:C.blue,fontFamily:MONO}}>{Math.round(t.c)}g</td>
-                    <td/>
-                  </tr>
-                </tbody></table></>);})()
-              :(<div style={{color:C.textDim,fontSize:12,fontFamily:SANS}}>{t.cal?`${Math.round(t.cal)}kcal · P:${Math.round(t.p)}g · F:${Math.round(t.f)}g · C:${Math.round(t.c)}g`:"No meal detail."}</div>)}
-              {e.meals?.length>0&&<div style={{marginTop:6,textAlign:"right"}}>
-                {confirmDel===e.date?(<span style={{display:"inline-flex",gap:6,alignItems:"center"}}>
-                  <span style={{fontSize:10,color:C.textMid,fontFamily:SANS}}>Delete meals?</span>
-                  <span onClick={()=>{const nl=health.map(h=>h.date===e.date?{...h,meals:[],calories:"",protein:"",fat:"",carbs:""}:h);saveH(nl);setExpDate(null);setConfirmDel(null);}} style={{fontSize:10,color:C.red,cursor:"pointer",fontWeight:700,fontFamily:SANS}}>Yes</span>
-                  <span onClick={()=>setConfirmDel(null)} style={{fontSize:10,color:C.textDim,cursor:"pointer",fontFamily:SANS}}>No</span>
-                </span>):(<span onClick={()=>setConfirmDel(e.date)} style={{fontSize:10,color:C.red,cursor:"pointer",fontFamily:SANS}}>🗑 Delete meals</span>)}</div>}
-            </div>)}
-          </div>);})})()}
-    </div>)}
-    {tab==="search"&&(<div style={sty.card}>
-      <div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:8,fontFamily:SANS}}>Search Meals</div>
-      <input value={searchQ} onChange={e=>setSearchQ(e.target.value)} placeholder="e.g. carbonara, chicken, oats…" autoFocus
-        style={{width:"100%",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",color:C.text,fontSize:13,fontFamily:SANS,outline:"none",boxSizing:"border-box",marginBottom:10}}/>
-      {searchQ.trim().length>=2&&(()=>{
-        const q=searchQ.trim().toLowerCase();
-        const results=[];
-        health.forEach(e=>{
-          (e.meals||[]).forEach(m=>{
-            if((m.name||"").toLowerCase().includes(q)||(m.description||"").toLowerCase().includes(q)){
-              results.push({date:e.date,meal:m});
-            }
-          });
-        });
-        results.sort((a,b)=>b.date.localeCompare(a.date));
-        if(!results.length)return <div style={{fontSize:12,color:C.textDim,fontFamily:SANS,textAlign:"center",padding:16}}>No matches for "{searchQ}"</div>;
-        return(<div>
-          <div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:6}}>{results.length} match{results.length!==1?"es":""}</div>
-          {results.slice(0,30).map((r,i)=>(
-            <div key={i} style={{padding:"6px 0",borderBottom:`1px solid ${C.borderLight}`}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <span style={{fontSize:12,fontWeight:600,color:C.text,fontFamily:SANS}}>{r.meal.name}</span>
-                <div style={{display:"flex",gap:6,alignItems:"center"}}>
-                  <span style={{fontSize:10,color:C.textDim,fontFamily:MONO}}>{r.date.slice(5)}</span>
-                  <span onClick={()=>{setSearchAdd(searchAdd===i?null:i);setSearchDate(todayStr());setSearchTime("");}} style={{fontSize:10,color:C.green,cursor:"pointer",fontWeight:600,fontFamily:SANS}}>+Add</span>
-                </div>
-              </div>
-              <div style={{display:"flex",gap:8,fontSize:11,fontFamily:MONO,marginTop:2}}>
-                <span style={{color:C.text}}>{r.meal.calories}kcal</span>
-                <span style={{color:C.green}}>P{r.meal.protein_g}g</span>
-                <span style={{color:C.orange}}>F{r.meal.fat_g}g</span>
-                <span style={{color:C.blue}}>C{r.meal.carbs_g}g</span>
-              </div>
-              {r.meal.description&&<div style={{fontSize:10,color:C.textDim,fontFamily:SANS,marginTop:1}}>{r.meal.description}</div>}
-              {searchAdd===i&&<div style={{display:"flex",gap:6,alignItems:"center",marginTop:4,padding:"4px 0",flexWrap:"wrap"}}>
-                <input type="date" value={searchDate} onChange={e=>setSearchDate(e.target.value)} style={{background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 6px",fontSize:11,color:C.text,fontFamily:MONO,outline:"none"}}/>
-                <input type="time" value={searchTime} onChange={e=>setSearchTime(e.target.value)} style={{background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:C.text,fontFamily:MONO,outline:"none"}}/>
-                <button onClick={()=>addFromSearch(r.meal)} style={sty.btn(C.green,true)}>Add</button>
-                <button onClick={()=>setSearchAdd(null)} style={sty.btn(C.surface,true)}>✕</button>
-              </div>}
-            </div>))}
-          {results.length>30&&<div style={{fontSize:10,color:C.textDim,textAlign:"center",padding:8,fontFamily:SANS}}>Showing first 30 of {results.length}</div>}
-        </div>);
-      })()}
-    </div>)}
+      {plate.length>0&&<div style={sty.card}>
+        <div style={{fontSize:13,fontWeight:700,marginBottom:8,color:C.text,fontFamily:SANS}}>Plate</div>
+        {plate.map((item,idx)=>(<div key={idx} style={{display:"flex",gap:6,alignItems:"center",marginBottom:6,padding:6,background:C.cardAlt,borderRadius:6}}>
+          <span style={{fontSize:12}}>{item.cat}</span>
+          <span style={{flex:1,fontSize:11,color:C.text,fontFamily:SANS}}>{item.n}</span>
+          <input type="number" value={item.g} onChange={e=>updG(idx,e.target.value)} style={{width:50,background:C.surface,border:`1px solid ${C.border}`,borderRadius:4,padding:"2px 4px",fontSize:11,color:C.text,outline:"none",fontFamily:MONO}}/>
+          <span style={{fontSize:9,color:C.textDim,fontFamily:SANS}}>g</span>
+          <button onClick={()=>rm(idx)} style={{padding:"2px 6px",background:C.red,color:"white",border:"none",borderRadius:4,cursor:"pointer",fontSize:10,fontFamily:SANS}}>✕</button>
+        </div>))}
+      </div>}
+      {plate.length>0&&<div style={sty.card}>
+        <div style={{display:"flex",justifyContent:"space-between",marginBottom:8}}>
+          <div style={{fontSize:13,fontWeight:700,color:C.text,fontFamily:SANS}}>Totals</div>
+          <div style={{fontSize:11,fontFamily:MONO,color:C.textMid}}>{T.cal}kcal · P{T.p}g · C{T.c}g · F{T.f}g</div>
+        </div>
+        <input type="text" value={mn} onChange={e=>setMN(e.target.value)} placeholder="Meal name (optional)" style={{width:"100%",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",marginBottom:6,boxSizing:"border-box",fontFamily:SANS}}/>
+        <div style={{display:"flex",gap:4,marginBottom:8}}>
+          <input type="date" value={md} onChange={e=>setMD(e.target.value)} style={{flex:1,background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",fontFamily:MONO}}/>
+          <input type="time" value={mt} onChange={e=>setMT(e.target.value)} style={{flex:1,background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",fontFamily:MONO}}/>
+        </div>
+        <button onClick={logPlate} style={{...sty.btn(C.green,true),fontSize:12,width:"100%"}}>Log Plate</button>
+        <div style={{marginTop:6}}><Status s={ss}/></div>
+      </div>}
+      {plate.length===0&&<div style={{textAlign:"center",color:C.textDim,fontSize:12,padding:16,fontFamily:SANS}}>Search and add ingredients above.</div>}
+    </div>}
+    {tab==="quick"&&<div style={sty.card}>
+      <div style={{fontSize:13,fontWeight:700,marginBottom:8,color:C.text,fontFamily:SANS}}>Quick Add</div>
+      <input type="text" value={qn} onChange={e=>setQN(e.target.value)} placeholder="Name" style={{width:"100%",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",marginBottom:6,boxSizing:"border-box",fontFamily:SANS}}/>
+      <div style={{display:"flex",gap:4,marginBottom:8}}>
+        <input type="number" value={qc} onChange={e=>setQC(e.target.value)} placeholder="kcal" style={{flex:1,background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",fontFamily:MONO}}/>
+        <input type="number" value={qp} onChange={e=>setQP(e.target.value)} placeholder="Protein" style={{flex:1,background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",fontFamily:MONO}}/>
+        <button onClick={qAdd} disabled={!qc} style={{...sty.btn(C.green,true),opacity:qc?1:0.4}}>+</button>
+      </div>
+      <Status s={ss}/>
+    </div>}
+    {tab==="history"&&<div>
+      <div style={{display:"flex",gap:4,marginBottom:8}}>
+        {[7,30,9999].map(n=>(<button key={n} onClick={()=>setHd(n)} style={{fontSize:11,padding:"4px 10px",background:hd===n?C.yellow:C.surface,border:"none",borderRadius:6,cursor:"pointer",fontFamily:SANS,color:hd===n?C.dark:C.textMid}}>{n===9999?"All":n+"d"}</button>))}
+      </div>
+      {(()=>{const now=new Date();now.setHours(0,0,0,0);const days=[];for(let i=hd-1;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);days.push(localDate(d));}const byDate=days.map(d=>{const e=health.find(h=>h.date===d);return{date:d,meals:(e&&e.meals)||[]};}).filter(x=>x.meals.length>0);return byDate.length===0?<div style={{color:C.textDim,fontSize:12,textAlign:"center",padding:16,fontFamily:SANS}}>No meals logged in this range.</div>:byDate.map(r=>(<div key={r.date} style={sty.card}>
+        <div onClick={()=>setExp(exp===r.date?null:r.date)} style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:MONO}}>{r.date}</div>
+          <div style={{fontSize:11,fontFamily:MONO,color:C.textMid}}>{Math.round(r.meals.reduce((a,m)=>a+m.calories,0))}kcal</div>
+        </div>
+        {exp===r.date&&<table style={{width:"100%",fontSize:11,marginTop:6}}><tbody>
+          {r.meals.map((m,i)=>(<tr key={i}>
+            <td style={{padding:"4px",color:C.text,fontFamily:SANS}}>{m.name}</td>
+            <td style={{padding:"4px",fontFamily:MONO,color:C.text}}>{m.calories}</td>
+            <td style={{padding:"4px",color:C.green,fontFamily:MONO}}>P{m.protein_g}g</td>
+          </tr>))}
+        </tbody></table>}
+      </div>));})()}
+    </div>}
   </div>);
+
 }
 
 // ─── SETTINGS ───────────────────────────────────────────────────────────────
-function Settings({plans,setPlans,gym,health,ftp,setFtp,z2Target,setZ2Target,exReg,setExReg,onPlanChange,idMap}) {
-  const [tab,setTab]=useState("dev");const [ftpIn,setFtpIn]=useState(ftp?String(ftp):"");const [z2In,setZ2In]=useState(z2Target?String(z2Target):"");
+function Settings({plans,setPlans,gym,health,ftp,setFtp,z2Target,setZ2Target,exReg,setExReg,onPlanChange,idMap,profile,setProfile}) {
+  const [tab,setTab]=useState("dev");
   const [devNotes,setDevNotes]=useState("");const [devSS,setDevSS]=useState(null);
   const [expDays,setExpDays]=useState(14);const [expText,setExpText]=useState("");const [copied,setCopied]=useState(false);const [expType,setExpType]=useState("gym");
   const [planName,setPlanName]=useState("");const [editPlanId,setEditPlanId]=useState(null);const [planStart,setPlanStart]=useState(todayStr());
@@ -1340,9 +1381,17 @@ function Settings({plans,setPlans,gym,health,ftp,setFtp,z2Target,setZ2Target,exR
   const [addExName,setAddExName]=useState("");const [addExSets,setAddExSets]=useState("4");const [addExReps,setAddExReps]=useState("8-12");const [addExWt,setAddExWt]=useState("");const [addExUnit,setAddExUnit]=useState("kg");const [addExSpin,setAddExSpin]=useState(false);
   const [ssMode,setSsMode]=useState(false);const [ssBuf,setSsBuf]=useState([]);const [copyTargets,setCopyTargets]=useState(null);const [editExKey,setEditExKey]=useState(null);const [editExVal,setEditExVal]=useState("");
   const [expPlan,setExpPlan]=useState(null);
+  const [nameIn,setNameIn]=useState(profile?.name||"");const [wtIn,setWtIn]=useState(profile?.weightTarget?String(profile.weightTarget):"");const [apiKeyIn,setApiKeyIn]=useState(profile?.apiKey||"");
+  const [calFloorIn,setCalFloorIn]=useState(profile?.calFloor?String(profile.calFloor):"1800");const [calCeilIn,setCalCeilIn]=useState(profile?.calCeil?String(profile.calCeil):"2000");
+  const [wpk1In,setWpk1In]=useState(profile?.wpk1?String(profile.wpk1):"2.5");const [wpk2In,setWpk2In]=useState(profile?.wpk2?String(profile.wpk2):"3.0");
+  const [pFtpIn,setPFtpIn]=useState(ftp?String(ftp):"");const [pZ2In,setPZ2In]=useState(z2Target?String(z2Target):"");
+  const [ewcUrlIn,setEwcUrlIn]=useState(profile?.ewcUrl||PD.ewcUrl);const [z2UrlIn,setZ2UrlIn]=useState(profile?.z2Url||PD.z2Url);
+  const saveProfile=async()=>{const p={name:nameIn.trim(),weightTarget:parseFloat(wtIn)||PD.weightTarget,apiKey:apiKeyIn.trim(),calFloor:parseInt(calFloorIn)||PD.calFloor,calCeil:parseInt(calCeilIn)||PD.calCeil,wpk1:parseFloat(wpk1In)||PD.wpk1,wpk2:parseFloat(wpk2In)||PD.wpk2,ewcUrl:ewcUrlIn.trim()||PD.ewcUrl,z2Url:z2UrlIn.trim()||PD.z2Url};setProfile(p);await save(K.profile,p);const fv=parseFloat(pFtpIn);if(fv){setFtp(fv);await save(K.ftp,fv);}const zv=parseFloat(pZ2In);if(zv){setZ2Target(zv);await save(K.z2Target,zv);}};
+  const [confirmClear,setConfirmClear]=useState(false);
+  const clearAllData=()=>{if(hasLocalStorage){Object.values(K).forEach(k=>{try{localStorage.removeItem(k);}catch{}});}window.location.reload();};
+  useEffect(()=>{const h=e=>setTab(e.detail);window.addEventListener("claudefit-settings-tab",h);return()=>window.removeEventListener("claudefit-settings-tab",h);},[]);
   useEffect(()=>{load(K.devNotes).then(d=>{if(d)setDevNotes(d);});},[]);
   const saveDevNotes=(t)=>{setDevNotes(t);optimisticSave(K.devNotes,t,null,s=>{setDevSS(s);setTimeout(()=>setDevSS(null),2000);});};
-  const saveFtp=async()=>{const v=parseFloat(ftpIn);if(!v)return;setFtp(v);await save(K.ftp,v);};
   const exName=(id,entry)=>(entry?.exSwaps?.[id])||idMap[id]||id;
 
   const genExport=()=>{const cut=new Date();if(expDays<9999)cut.setDate(cut.getDate()-expDays);else cut.setFullYear(2000);
@@ -1439,7 +1488,7 @@ function Settings({plans,setPlans,gym,health,ftp,setFtp,z2Target,setZ2Target,exR
   const hasDays=Object.values(bDays).some(d=>d.supersets.length>0);
   return(<div>
     <div style={{display:"flex",gap:4,marginBottom:12,flexWrap:"wrap",position:"sticky",top:56,zIndex:50,background:"rgba(245,241,236,0.92)",backdropFilter:"blur(8px)",padding:"8px 0"}}>
-      {[["manual","Manual"],["dev","Dev Notes"],["exercises","Exercises"],["plans","Plans"],["newplan","+ New Plan"],["ftp","FTP"],["export","Export"],["mobility","Mobility"]].map(([v,l])=>(<button key={v} onClick={()=>{setTab(v);if(v==="newplan"){setEditPlanId(null);setPlanStart(todayStr());}}} style={sty.tab(tab===v)}>{l}</button>))}</div>
+      {[["manual","Manual"],["dev","Dev Notes"],["exercises","Exercises"],["plans","Plans"],["newplan","+ New Plan"],["profile","Profile"],["export","Export"],["mobility","Mobility"]].map(([v,l])=>(<button key={v} onClick={()=>{setTab(v);if(v==="newplan"){setEditPlanId(null);setPlanStart(todayStr());}}} style={sty.tab(tab===v)}>{l}</button>))}</div>
     {tab==="plans"&&<div>{[...plans].reverse().map(p=>{const acts=p.activations||[];const isA=acts.length&&acts[acts.length-1].to===null;const isExp=isA||expPlan===p.id;
       return(<div key={p.id} style={{...sty.card,border:`2px solid ${isA?C.green:C.border}`}}>
         <div onClick={()=>!isA&&setExpPlan(expPlan===p.id?null:p.id)} style={{display:"flex",justifyContent:"space-between",marginBottom:isExp?4:0,cursor:isA?"default":"pointer"}}>
@@ -1571,12 +1620,58 @@ function Settings({plans,setPlans,gym,health,ftp,setFtp,z2Target,setZ2Target,exR
       </div>
       {hasDays&&<button onClick={confirmPlan} style={{...sty.btn(C.green),width:"100%"}}>{editPlanId?"Save Changes":"Activate Plan"}: {planName||"New Plan"}</button>}
     </div>)}
-    {tab==="ftp"&&<div style={sty.card}><div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:10,fontFamily:SANS}}>FTP (Watts)</div>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}><input type="number" value={ftpIn} onChange={e=>setFtpIn(e.target.value)} placeholder="162" style={sty.input(80)}/><button onClick={saveFtp} style={sty.btn(C.green,true)}>Save</button></div>
-      {ftp&&<div style={{fontSize:12,color:C.textMid,fontFamily:MONO,marginTop:8}}>Current: {ftp}W</div>}
-      <div style={{marginTop:16,fontWeight:700,fontSize:14,color:C.text,marginBottom:10,fontFamily:SANS}}>Z2 Target (min/week)</div>
-      <div style={{display:"flex",gap:8,alignItems:"center"}}><input type="number" value={z2In} onChange={e=>setZ2In(e.target.value)} placeholder="150" style={sty.input(80)}/><button onClick={async()=>{const v=parseFloat(z2In);if(!v)return;setZ2Target(v);await save(K.z2Target,v);}} style={sty.btn(C.green,true)}>Save</button></div>
-      {z2Target&&<div style={{fontSize:12,color:C.textMid,fontFamily:MONO,marginTop:8}}>Current: {z2Target} min/week</div>}
+    {tab==="profile"&&<div style={sty.card}>
+      <div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:10,fontFamily:SANS}}>Profile</div>
+      <div style={{display:"flex",gap:8,alignItems:"flex-end",marginBottom:10,flexWrap:"wrap"}}>
+        <div><div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>Name</div>
+          <input value={nameIn} onChange={e=>setNameIn(e.target.value)} placeholder="Your name" style={{...sty.input(120),fontSize:13,textAlign:"left"}}/></div>
+        <div><div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>Weight target (kg)</div>
+          <input type="number" step="0.5" value={wtIn} onChange={e=>setWtIn(e.target.value)} placeholder="79" style={sty.input(70)}/></div>
+      </div>
+      <div style={{display:"flex",gap:8,alignItems:"flex-end",marginBottom:10,flexWrap:"wrap"}}>
+        <div><div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>Cal floor</div>
+          <input type="number" value={calFloorIn} onChange={e=>setCalFloorIn(e.target.value)} placeholder="1800" style={sty.input(60)}/></div>
+        <div><div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>Cal ceiling</div>
+          <input type="number" value={calCeilIn} onChange={e=>setCalCeilIn(e.target.value)} placeholder="2000" style={sty.input(60)}/></div>
+      </div>
+      <div style={{display:"flex",gap:8,alignItems:"flex-end",marginBottom:10,flexWrap:"wrap"}}>
+        <div><div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>W/kg goal 1</div>
+          <input type="number" step="0.1" value={wpk1In} onChange={e=>setWpk1In(e.target.value)} placeholder="2.5" style={sty.input(60)}/></div>
+        <div><div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>W/kg goal 2</div>
+          <input type="number" step="0.1" value={wpk2In} onChange={e=>setWpk2In(e.target.value)} placeholder="3.0" style={sty.input(60)}/></div>
+      </div>
+      <div style={{display:"flex",gap:8,alignItems:"flex-end",marginBottom:10,flexWrap:"wrap"}}>
+        <div><div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>FTP (watts)</div>
+          <input type="number" value={pFtpIn} onChange={e=>setPFtpIn(e.target.value)} placeholder="162" style={sty.input(60)}/></div>
+        <div><div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>Z2 target (min/wk)</div>
+          <input type="number" value={pZ2In} onChange={e=>setPZ2In(e.target.value)} placeholder="150" style={sty.input(60)}/></div>
+      </div>
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>Claude API Key</div>
+        <input type="password" value={apiKeyIn} onChange={e=>setApiKeyIn(e.target.value)} placeholder="sk-ant-..." style={{...sty.input(200),fontSize:11,textAlign:"left"}}/>
+        <div style={{fontSize:9,color:C.textDim,fontFamily:SANS,marginTop:3}}>Enables AI food processing. Key stored locally only.</div>
+      </div>
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>EatingWithClaude URL</div>
+        <input value={ewcUrlIn} onChange={e=>setEwcUrlIn(e.target.value)} placeholder="https://..." style={{...sty.input(200),fontSize:11,textAlign:"left"}}/>
+      </div>
+      <div style={{marginBottom:10}}>
+        <div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:4}}>Z2 CTRL URL</div>
+        <input value={z2UrlIn} onChange={e=>setZ2UrlIn(e.target.value)} placeholder="https://..." style={{...sty.input(200),fontSize:11,textAlign:"left"}}/>
+      </div>
+      <button onClick={saveProfile} style={sty.btn(C.green,true)}>Save</button>
+      {profile?.name&&<div style={{fontSize:12,color:C.textMid,fontFamily:MONO,marginTop:8}}>Current: {profile.name}, target {profile.weightTarget}kg, cal {profile.calFloor}-{profile.calCeil}, W/kg {profile.wpk1}/{profile.wpk2}</div>}
+      <div style={{borderTop:`1px solid ${C.border}`,marginTop:16,paddingTop:12}}>
+        <a href="https://richardmcdowall-glitch.github.io/ClaudeFit/README.html" target="_blank" rel="noopener" style={{fontSize:12,color:C.blue,fontFamily:SANS,textDecoration:"none",fontWeight:600}}>📖 README & Release Notes</a>
+      </div>
+      <div style={{borderTop:`1px solid ${C.border}`,marginTop:16,paddingTop:12}}>
+        <div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginBottom:8}}>Remove all saved data and start fresh. This cannot be undone.</div>
+        {!confirmClear?<button onClick={()=>setConfirmClear(true)} style={sty.btn(C.red,true)}>Clear All Data</button>
+        :<div style={{display:"flex",gap:8,alignItems:"center"}}>
+          <button onClick={clearAllData} style={sty.btn(C.red,true)}>Yes, delete everything</button>
+          <button onClick={()=>setConfirmClear(false)} style={sty.btn(C.surface,true)}>Cancel</button>
+        </div>}
+      </div>
     </div>}
     {tab==="exercises"&&<div style={sty.card}>
       <div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:4,fontFamily:SANS}}>Exercise Registry</div>
@@ -1614,21 +1709,24 @@ function Settings({plans,setPlans,gym,health,ftp,setFtp,z2Target,setZ2Target,exR
       <textarea rows={8} value={devNotes} onChange={e=>setDevNotes(e.target.value)} placeholder="e.g. add cable vs dumbbell indicator&#10;plan builder drag to reorder" style={{width:"100%",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:8,padding:12,color:C.text,fontSize:13,fontFamily:SANS,resize:"vertical",outline:"none",boxSizing:"border-box",lineHeight:1.7}}/>
       <div style={{display:"flex",gap:6,marginTop:8,alignItems:"center"}}><button onClick={()=>saveDevNotes(devNotes)} style={sty.btn(C.accent,true)}>Save</button><Status s={devSS}/></div></div>}
     {tab==="manual"&&<div style={{display:"flex",flexDirection:"column",gap:10}}>
-      {[{t:"Morning Check-in",b:"Home screen. Enter weight, set mood and readiness before the day influences either. Tap Save. Z2 minutes field adds to your weekly zone 2 total — use for commutes and untracked rides."},
-        {t:"Logging a Workout",b:"Gym → tap a day to expand. Weight auto-fills from your morning check-in. Fill sets, tap ⭕ to mark done (starts rest timer). Timer persists if you switch screens. Use ⇊ to fill all sets from set 1."},
-        {t:"Mesocycle Banner",b:"The coloured bar shows your current phase. Right section (») advances phase — entering deload from any phase increments cycle. Left section («) goes back — never changes cycle. Past days: changes only that entry, not global state."},
-        {t:"Exercise Feel",b:"Each exercise has a tap indicator: ◽→➕ more→💪 growth→💚 ok→⚠️ twinge→🔴 pain→➖ less. Plus a 💬 note bubble. These aggregate in the body map — tap a muscle to see feel history and latest notes per exercise over 10 days."},
+      {[{t:"First Login",b:"Tap ⚙️ → Profile. Set your name, weight target, calorie range, W/kg goals, FTP, and Z2 weekly target. Paste your Claude API key (from console.anthropic.com) to enable AI food processing. Hit Save. All charts and dashboards read from these values."},
+        {t:"Navigation",b:"Bottom bar: 🏠 Home, 🏋️ Gym, 📈 Progress, 🍽️ Food, ⚙️ Settings. Swipe from the left edge for a sidebar, right edge for a quick panel. Double-tap 🍽️ to open EatingWithClaude (standalone meal builder) in a new tab."},
+        {t:"Morning Check-in",b:"Home screen. Enter weight, set mood and readiness before the day influences either. Tap Save. Z2 minutes field adds to your weekly zone 2 total — use for commutes and untracked rides."},
+        {t:"Logging a Workout",b:"Gym → tap a day to expand. Weight auto-fills from your morning check-in. Fill sets, tap ⭕ to mark done (starts rest timer). Use ⇊ to fill all sets from set 1. Tap Plans in the Gym header to jump to plan management."},
+        {t:"Mesocycle Banner",b:"The coloured bar shows your current phase. Right section (») advances phase — entering deload from any phase increments cycle. Left section («) goes back — never changes cycle."},
+        {t:"Exercise Feel",b:"Each exercise has a tap indicator: ◽→➕→💪→💚→⚠️→🔴→➖. Plus a 💬 note bubble. These aggregate in the body map — tap a muscle to see feel history and notes over 10 days."},
         {t:"Mobility",b:"Tap 🧘 Mobility done on any day. Adds 2×10 sets of glute bridges, bird dogs, leg curls, and calf raises to your body map counts automatically."},
-        {t:"Z2 Ride Data",b:"From Z2 CTRL app: tap 📋 ClaudeFit to copy the ride line. In ClaudeFit: expand the day, paste into the Z2 field, tap 🚴. Data populates automatically. Duration adds to your weekly Z2 total alongside manual entries."},
-        {t:"Zone 2 Weekly",b:"Two sources feed the Z2 weekly chart: manual minutes from Home (commutes etc) and Z2 ride durations from pasted ride data. Set your weekly target in Settings → FTP."},
-        {t:"Efficiency Factor (EF)",b:"EF = watts ÷ heart rate. Higher is better — means more power per heartbeat. Below 1.0 flags fatigue (🚨). The EF trend chart shows Z2 rides (blue) and spinning (amber) separately. Pre-exhausting legs before spinning naturally lowers spinning EF — compare like with like."},
-        {t:"EF Reference",b:"<0.90 Poor (illness/heat) · 0.90–1.05 Below avg · 1.05–1.20 Average · 1.20–1.35 Good · 1.35–1.50 Strong · 1.50+ Excellent. Indoor typically 0.05–0.10 lower than outdoor."},
+        {t:"Z2 Ride Data",b:"From Z2 CTRL app: tap 📋 ClaudeFit to copy the ride line. In ClaudeFit: expand the day, paste into the Z2 field, tap 🚴. Duration adds to your weekly Z2 total alongside manual entries."},
+        {t:"Zone 2 Weekly",b:"Two sources feed the Z2 weekly chart: manual minutes from Home (commutes etc) and Z2 ride durations from pasted ride data. Set your weekly target in Settings → Profile."},
+        {t:"Efficiency Factor (EF)",b:"EF = watts ÷ heart rate. Higher is better. Below 1.0 flags fatigue (🚨). The EF trend chart shows Z2 rides (blue) and spinning (amber) separately."},
+        {t:"EF Reference",b:"<0.90 Poor · 0.90–1.05 Below avg · 1.05–1.20 Average · 1.20–1.35 Good · 1.35–1.50 Strong · 1.50+ Excellent. Indoor typically 0.05–0.10 lower than outdoor."},
         {t:"Body Map",b:"10-day window. Tap a muscle to see sets per exercise and feel indicators. Legend: grey=0, red=<5, amber=5-9, green=10-14, blue=15+ sets."},
-        {t:"Charts",b:"7d/14d/30d/All selector controls body weight and calorie charts. W/kg shows spinning weekly averages with FTP, 2.5 Fit Amateur, and 3.0 Club Pro reference lines."},
+        {t:"Charts",b:"7d/14d/30d/All selector controls body weight and calorie charts. W/kg shows spinning weekly averages with your FTP and W/kg goal reference lines from Profile."},
+        {t:"Food & AI",b:"Notes tab: jot what you ate, tap Process for AI macro estimation (needs API key in Profile). 📷 for photo-based estimation. Quick Add for fast calorie/protein entry. Favourites for one-tap logging. Import tab for pasting MEAL lines."},
         {t:"Training Plans",b:"Settings → Plans to view/edit/clone. + New Plan to build from scratch. Tap exercise names in the builder to rename, autocomplete from registry."},
         {t:"Move Session",b:"📅 Move button on any day — pick a target date, confirm. Moves all session data to the new date."},
-        {t:"Food",b:"Notes tab: jot food for reference. Quick Add for fast calorie/protein entry with date picker. Import tab for pasting MEAL lines from chat. Favourites for one-tap logging of regular meals."},
-        {t:"Backup & Restore",b:"💾 in the header reads ALL storage keys into a single JSON backup. Restore → 📁 File to load from a saved backup. Covers health, gym, plans, food notes, favourites, exercise registry, and all settings."},
+        {t:"Backup & Restore",b:"💾 in the header reads ALL storage keys into a single JSON backup. Restore → 📁 File to load from a saved backup. Covers health, gym, plans, food, exercise registry, profile, and all settings."},
+        {t:"Companion Apps",b:"🚴 Z2 CTRL (tap the bike icon in the header) for Zone 2 roller sessions with live Bluetooth power/HR. 🍽️ EatingWithClaude (double-tap the food icon) for standalone meal building with more options."},
       ].map(({t,b})=>(<div key={t} style={sty.card}>
         <div style={{fontWeight:700,fontSize:13,color:C.text,marginBottom:4,fontFamily:SANS}}>{t}</div>
         <div style={{fontSize:12,color:C.textMid,lineHeight:1.7,fontFamily:SANS}}>{b}</div>
@@ -1673,16 +1771,18 @@ function RestoreModal({onClose,onDone}) {const [text,setText]=useState("");const
 }
 
 // ─── ROOT ───────────────────────────────────────────────────────────────────
-export default function App() {
+function App() {
   const [screen,setScreen]=useState("home");const [health,setHealth]=useState([]);const [gym,setGym]=useState({});
   const [mesoWeek,setMesoWeek]=useState(0);const [mesoStart,setMesoStart]=useState(todayStr());const [mesoCycle,setMesoCycle]=useState(1);
-  const [plans,setPlans]=useState([DEFAULT_PLAN]);const [ftp,setFtp]=useState(null);const [z2Target,setZ2Target]=useState(null);
+  const [plans,setPlans]=useState([DEFAULT_PLAN]);const [ftp,setFtp]=useState(null);const [z2Target,setZ2Target]=useState(null);const [profile,setProfile]=useState({name:"",apiKey:"",...PD});
   const [loaded,setLoaded]=useState(false);const [showR,setShowR]=useState(false);
   const [exReg,setExReg]=useState({});
   const [saveError,setSaveError]=useState(null);
   const [showSidebar,setShowSidebar]=useState(false);
   const [showLeftBar,setShowLeftBar]=useState(false);
   const [tapCycle,setTapCycle]=useState({});
+  const foodTapRef=useRef(0);
+  const [showWelcome,setShowWelcome]=useState(false);const [showSettingsDot,setShowSettingsDot]=useState(false);
   const [restEnd,setRestEnd]=useState(null);const [restLeft,setRestLeft]=useState(null);
   const timerRef=useRef(null);
 
@@ -1691,7 +1791,7 @@ export default function App() {
 
   useEffect(()=>{if(restEnd){const tick=()=>{const l=Math.max(0,Math.ceil((restEnd-Date.now())/1000));setRestLeft(l);if(l>0)timerRef.current=requestAnimationFrame(tick);};timerRef.current=requestAnimationFrame(tick);return()=>cancelAnimationFrame(timerRef.current);}},[restEnd]);
   const startRest=(s=90)=>{setRestEnd(Date.now()+s*1000);setRestLeft(s);};
-  useEffect(()=>{load(K.ftp).then(d=>{if(d)setFtp(d);});load(K.z2Target).then(d=>{if(d)setZ2Target(d);});
+  useEffect(()=>{load(K.ftp).then(d=>{if(d)setFtp(d);});load(K.z2Target).then(d=>{if(d)setZ2Target(d);});load(K.profile).then(d=>{if(d)setProfile(d);});
     Promise.all([load(K.health),load(K.log),load(K.meta),load(K.plans),load(K.exRegistry)]).then(async([h,g,m,p,reg])=>{
       const empty=!h?.length&&!g;
       if(empty&&SEED_PLANS){p=SEED_PLANS;
@@ -1702,7 +1802,7 @@ export default function App() {
       if(p?.length)setPlans(p);
       const builtReg=buildRegistry(reg||{},p||[DEFAULT_PLAN],g||{});
       setExReg(builtReg);save(K.exRegistry,builtReg);
-    }).finally(()=>setLoaded(true));},[]);
+    }).finally(()=>{setLoaded(true);try{const seen=localStorage.getItem("rh-seen-ver");if(seen!==VER){setShowWelcome(true);setShowSettingsDot(true);localStorage.setItem("rh-seen-ver",VER);}}catch{}});},[]);
   const activePlan=plans.find(p=>{const a=p.activations||[];return a.length&&a[a.length-1].to===null;})||DEFAULT_PLAN;
   const idMap=useMemo(()=>buildIdMap(plans,gym),[plans,gym]);
   const saveHCb=useCallback((nl,statusFn)=>{optimisticSave(K.health,nl,setHealth,statusFn);},[]);
@@ -1754,7 +1854,7 @@ export default function App() {
     setSaveError("📋 7-day dump copied to clipboard");
   },[health,gym,idMap]);
   if(!loaded)return(<div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:C.bg,color:C.textDim,fontFamily:SANS,fontSize:13}}>Loading…</div>);
-  const nav=[{k:"home",i:"🏠"},{k:"progress",i:"📈"},{k:"gym",i:"🏋️"},{k:"food",i:"🍽️"},{k:"settings",i:"⚙️"}];
+  const nav=[{k:"home",i:"🏠"},{k:"gym",i:"🏋️"},{k:"food",i:"🍽️"},{k:"progress",i:"⏱️"},{k:"settings",i:"⚙️"}];
   const edgeBtn=(side,onClick)=><div onClick={onClick} style={{position:"fixed",[side]:0,top:0,bottom:0,width:16,zIndex:90,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",background:"rgba(26,26,26,0.04)",borderRadius:side==="left"?"0 8px 8px 0":"8px 0 0 8px"}}><span style={{fontSize:10,color:C.textDim,fontWeight:700,opacity:0.35}}>{side==="left"?"‹":"›"}</span></div>;
   return(<div style={{minHeight:"100vh",background:C.bg,fontFamily:SANS}}>
     {saveError&&<div onClick={()=>setSaveError(null)} style={{position:"fixed",top:46,left:0,right:0,zIndex:300,display:"flex",justifyContent:"center",padding:"0 16px",pointerEvents:"none"}}>
@@ -1767,6 +1867,15 @@ export default function App() {
     {!showLeftBar&&edgeBtn("left",()=>setShowLeftBar(true))}
     {!showSidebar&&edgeBtn("right",()=>setShowSidebar(true))}
     {showR&&<RestoreModal onClose={()=>setShowR(false)} onDone={()=>window.location.reload()}/>}
+    {showWelcome&&<div onClick={()=>setShowWelcome(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:24,width:"100%",maxWidth:360,border:`1px solid ${C.border}`}}>
+        <div style={{fontSize:18,fontWeight:700,color:C.text,fontFamily:SANS,marginBottom:8}}>Welcome to ClaudeFit v{VER}</div>
+        <div style={{fontSize:13,color:C.textMid,fontFamily:SANS,lineHeight:1.6,marginBottom:12}}>Start in <b>Settings → Profile</b> to set your name, targets, and API key. Check the README for a full walkthrough.</div>
+        <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+          <a href="https://richardmcdowall-glitch.github.io/ClaudeFit/README.html" target="_blank" rel="noopener" style={{padding:"6px 14px",borderRadius:8,background:C.accent,color:C.dark,fontWeight:600,fontSize:11,textDecoration:"none",fontFamily:SANS}}>📖 README</a>
+          <button onClick={()=>{setShowWelcome(false);setScreen("settings");}} style={sty.btn(C.green,true)}>⚙️ Go to Profile</button>
+          <button onClick={()=>setShowWelcome(false)} style={sty.btn(C.surface,true)}>Dismiss</button>
+        </div></div></div>}
     {backupJson&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={()=>{setBackupJson(null);setBackupCopied(false);}}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:20,width:"100%",maxWidth:400,border:`1px solid ${C.border}`,display:"flex",flexDirection:"column",gap:10,maxHeight:"80vh"}}>
         <div style={{fontSize:14,fontWeight:700,color:C.text,fontFamily:SANS}}>✓ Backup Ready</div>
@@ -1779,16 +1888,16 @@ export default function App() {
     </div>}
     <div style={{background:C.dark,padding:"6px 16px 8px",position:"sticky",top:0,zIndex:100}}>
       <div style={{maxWidth:600,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <div style={{display:"flex",gap:4}}>{nav.map(({k,i})=>(<button key={k} onClick={()=>setScreen(k)} style={{padding:"6px 12px",borderRadius:14,border:"none",cursor:"pointer",fontSize:20,background:screen===k?"rgba(245,197,24,0.25)":"transparent",filter:screen===k?"none":"grayscale(0.5) opacity(0.5)"}}><span>{i}</span></button>))}</div>
-        <a href="https://richardmcdowall-glitch.github.io/testclaudePBI/" style={{fontSize:16,textDecoration:"none",padding:"6px 10px",borderRadius:10,background:"rgba(255,255,255,0.08)",display:"flex",alignItems:"center",gap:4}}>
+        <div style={{display:"flex",gap:4}}>{nav.map(({k,i})=>(<button key={k} onClick={()=>{if(k==="food"){const now=Date.now();if(now-foodTapRef.current<400){window.open(profile?.ewcUrl||PD.ewcUrl,"_blank");foodTapRef.current=0;return;}foodTapRef.current=now;}if(k==="settings")setShowSettingsDot(false);setScreen(k);}} style={{padding:"6px 12px",borderRadius:14,border:"none",cursor:"pointer",fontSize:20,background:screen===k?"rgba(245,197,24,0.25)":"transparent",filter:screen===k?"none":"grayscale(0.5) opacity(0.5)",position:"relative"}}><span>{i}</span>{k==="settings"&&showSettingsDot&&<span style={{position:"absolute",top:4,right:4,width:8,height:8,borderRadius:"50%",background:"#c8352e",animation:"pulse 1.5s infinite"}}/>}</button>))}</div>
+        <a href={profile?.z2Url||PD.z2Url} style={{fontSize:16,textDecoration:"none",padding:"6px 10px",borderRadius:10,background:"rgba(255,255,255,0.08)",display:"flex",alignItems:"center",gap:4}}>
           <span>🚴</span><span style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontFamily:SANS,fontWeight:600}}>Z2</span></a>
       </div></div>
     <div style={{maxWidth:600,margin:"0 auto",padding:"16px 14px 32px"}}>
-      {screen==="home"&&<Home health={health} saveH={saveHCb} plan={activePlan} gym={gym} ftp={ftp} idMap={idMap} exReg={exReg} z2Target={z2Target} onGoToDate={(date)=>{setScreen("gym");setTimeout(()=>{window.dispatchEvent(new CustomEvent("claudefit-goto-date",{detail:date}));},100);}} onBackup={downloadBackup} onRestore={()=>setShowR(true)} onDownload={downloadFile} onChatDump={chatDump}/>}
-      {screen==="gym"&&<Gym gym={gym} setGym={setGym} mesoWeek={mesoWeek} setMesoWeek={setMesoWeek} setMesoStart={setMesoStart} mesoCycle={mesoCycle} setMesoCycle={setMesoCycle} plan={activePlan} health={health} plans={plans} idMap={idMap} exReg={exReg} startRest={startRest}/>}
-      {screen==="food"&&<ErrorGuard><Food health={health} saveH={saveHCb}/></ErrorGuard>}
-      {screen==="progress"&&<Progress gym={gym} health={health} plan={activePlan} ftp={ftp} idMap={idMap} exReg={exReg} z2Target={z2Target} onGoToDate={(date)=>{setScreen("gym");setTimeout(()=>{const ev=new CustomEvent("claudefit-goto-date",{detail:date});window.dispatchEvent(ev);},100);}}/>}
-      {screen==="settings"&&<Settings plans={plans} setPlans={setPlans} gym={gym} health={health} ftp={ftp} setFtp={setFtp} z2Target={z2Target} setZ2Target={setZ2Target} exReg={exReg} setExReg={setExReg} idMap={idMap} onPlanChange={async()=>{setMesoCycle(1);setMesoWeek(0);await save(K.meta,{mesoWeek:0,mesoStart:todayStr(),mesoCycle:1});}}/>}
+      {screen==="home"&&<Home health={health} saveH={saveHCb} plan={activePlan} gym={gym} ftp={ftp} idMap={idMap} exReg={exReg} z2Target={z2Target} profile={profile} onGoToDate={(date)=>{setScreen("gym");setTimeout(()=>{window.dispatchEvent(new CustomEvent("claudefit-goto-date",{detail:date}));},100);}} onBackup={downloadBackup} onRestore={()=>setShowR(true)} onDownload={downloadFile} onChatDump={chatDump}/>}
+      {screen==="gym"&&<Gym gym={gym} setGym={setGym} mesoWeek={mesoWeek} setMesoWeek={setMesoWeek} setMesoStart={setMesoStart} mesoCycle={mesoCycle} setMesoCycle={setMesoCycle} plan={activePlan} health={health} plans={plans} idMap={idMap} exReg={exReg} startRest={startRest} onGoToPlans={()=>{setScreen("settings");setTimeout(()=>window.dispatchEvent(new CustomEvent("claudefit-settings-tab",{detail:"plans"})),50);}}/>}
+      {screen==="food"&&<ErrorGuard><Food health={health} saveH={saveHCb} profile={profile}/></ErrorGuard>}
+      {screen==="progress"&&<Progress gym={gym} health={health} plan={activePlan} ftp={ftp} idMap={idMap} exReg={exReg} z2Target={z2Target} profile={profile} onGoToDate={(date)=>{setScreen("gym");setTimeout(()=>{const ev=new CustomEvent("claudefit-goto-date",{detail:date});window.dispatchEvent(ev);},100);}}/>}
+      {screen==="settings"&&<Settings plans={plans} setPlans={setPlans} gym={gym} health={health} ftp={ftp} setFtp={setFtp} z2Target={z2Target} setZ2Target={setZ2Target} exReg={exReg} setExReg={setExReg} idMap={idMap} profile={profile} setProfile={setProfile} onPlanChange={async()=>{setMesoCycle(1);setMesoWeek(0);await save(K.meta,{mesoWeek:0,mesoStart:todayStr(),mesoCycle:1});}}/>}
     </div>
     {(showSidebar||showLeftBar)&&<div onClick={()=>{setShowSidebar(false);setShowLeftBar(false);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:240}}/>}
     {showSidebar&&(()=>{
@@ -1811,7 +1920,7 @@ export default function App() {
           const ge=gym[ds];
           const pd=DAYS[new Date(ds+"T12:00:00").getDay()];
           const cal=he?.calories?parseInt(he.calories):0;
-          const calColor=cal>=1800&&cal<=2000?C.green:cal>2000?C.red:cal>0?C.blue:"transparent";
+          const calColor=cal>=(profile?.calFloor||1800)&&cal<=(profile?.calCeil||2000)?C.green:cal>(profile?.calCeil||2000)?C.red:cal>0?C.blue:"transparent";
           const hasSets=ge&&Object.values(ge.sets||{}).some(a=>a.some(s=>s.done));
           const hasSpin=ge&&Object.entries(ge.sets||{}).some(([,a])=>a.some(s=>s.avgWatts&&Number(s.avgWatts)>0));
           const hasZ2=!!ge?.z2Ride;
@@ -1883,3 +1992,8 @@ export default function App() {
     })()}
   </div>);
 }
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
