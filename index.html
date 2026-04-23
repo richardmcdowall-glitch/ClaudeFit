@@ -38,7 +38,7 @@ const pad = n => String(n).padStart(2,"0");
 const todayStr = () => { const d=new Date(); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; };
 const localDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-const PD = {weightTarget:79,calFloor:1800,calCeil:2000,wpk1:2.5,wpk2:3.0,ewcUrl:"https://claude.ai/public/artifacts/5ff3ebf8-e499-4cb9-844c-0b43336ea84b",z2Url:"https://richardmcdowall-glitch.github.io/Zone2/"};
+const PD = {weightTarget:79,calFloor:1800,calCeil:2000,wpk1:2.5,wpk2:3.0,ewcUrl:"https://claude.ai/public/artifacts/05d19a7d-2a09-4f08-9c35-fd7c7e4ae96b",z2Url:"https://richardmcdowall-glitch.github.io/Zone2/"};
 const VER = "3.0.0";
 const CHEERS = ["Not bad at all. 💪","Steady work. ✅","That'll do nicely. 👊","Proper session. 🏋️","Job done. 🎯","Good shift. 💚","Cracking effort. 🔥","On it. ✊"];
 const moodEmoji = v => ["😞","😕","😐","🙂","😄"][Math.round(v)-1] || "";
@@ -429,28 +429,26 @@ function BodySVG({counts,onSelect,selected,colorFn,cardio}) {
 }
 
 // ─── EXERCISE GRID ──────────────────────────────────────────────────────────
-function ExGrid({supersets,sets,onChange,onDone,bw,mesoWeek,onAdd,onRemove,onMove,onSwap,exFeel,onExFeel,exNotes,onExNote,exReg}) {
+const SupersetCard = React.memo(function SupersetCard({ss,si,total,sets,onChange,onDone,bw,onAdd,onRemove,onMove,onSwap,exFeel,onExFeel,exNotes,onExNote,exReg}) {
+  const [expanded,setExpanded]=useState(false);
   const [swapId,setSwapId]=useState(null),[swapText,setSwapText]=useState("");
   const [noteOpen,setNoteOpen]=useState(null);
-  const [openSS,setOpenSS]=useState({});
   const swapMatches=swapText.trim().length>=2?Object.values(exReg||{}).filter(e=>e.name.toLowerCase().includes(swapText.trim().toLowerCase())).slice(0,5):[];
-  return supersets.map((ss,si)=>{
-    const isSS=ss.exercises.length>1, numS=(sets[ss.exercises[0]?.id]||[]).length||0;
-    const isOpen=openSS[ss.id]!==undefined?openSS[ss.id]:false;
-    const doneSets=ss.exercises[0]?.id?((sets[ss.exercises[0].id]||[]).filter(s=>s.done).length):0;
-    const hasSomeData=ss.exercises.some(ex=>(sets[ex.id]||[]).some(s=>s.done||s.weight||s.avgWatts));
-    return(
-      <div key={ss.id} style={{background:C.card,borderRadius:12,marginBottom:10,overflow:"hidden",border:`1px solid ${isOpen?C.yellow:hasSomeData?C.green:C.border}`,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-        <div onClick={()=>setOpenSS(p=>({...p,[ss.id]:!p[ss.id]}))} style={{background:C.dark,padding:"7px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
-          <span style={{fontSize:12,fontWeight:700,color:"#fff",fontFamily:SANS}}>{ss.name}</span>
-          <div style={{display:"flex",alignItems:"center",gap:4}}>
-            {hasSomeData&&<span style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontFamily:MONO}}>{doneSets}/{numS}</span>}
-            {isSS&&<span style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontFamily:SANS}}>SS</span>}
-            {isOpen&&onMove&&<>{si>0&&<span onClick={e=>{e.stopPropagation();onMove(si,-1);}} style={{cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:12,padding:"0 3px"}}>↑</span>}{si<supersets.length-1&&<span onClick={e=>{e.stopPropagation();onMove(si,1);}} style={{cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:12,padding:"0 3px"}}>↓</span>}</>}
-            <span style={{fontSize:10,color:"rgba(255,255,255,0.5)",transition:"transform 0.2s",transform:isOpen?"rotate(180deg)":"rotate(0deg)"}}>▾</span>
-          </div>
+  const isSS=ss.exercises.length>1, numS=(sets[ss.exercises[0]?.id]||[]).length||0;
+  let doneCount=0;for(let i=0;i<numS;i++){if(ss.exercises.every(ex=>sets[ex.id]?.[i]?.done))doneCount++;}
+  const allDone=numS>0&&doneCount===numS;
+  return(
+    <div style={{background:C.card,borderRadius:12,marginBottom:10,overflow:"hidden",border:`1px solid ${C.border}`,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+      <div onClick={()=>setExpanded(v=>!v)} style={{background:C.dark,padding:"7px 12px",display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer"}}>
+        <span style={{fontSize:12,fontWeight:700,color:"#fff",fontFamily:SANS}}>{ss.name}</span>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          {numS>0&&<span style={{fontSize:10,fontWeight:700,color:allDone?C.green:"rgba(255,255,255,0.75)",fontFamily:MONO}}>{doneCount}/{numS}</span>}
+          {onMove&&<>{si>0&&<span onClick={e=>{e.stopPropagation();onMove(si,-1);}} style={{cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:12,padding:"0 3px"}}>↑</span>}{si<total-1&&<span onClick={e=>{e.stopPropagation();onMove(si,1);}} style={{cursor:"pointer",color:"rgba(255,255,255,0.6)",fontSize:12,padding:"0 3px"}}>↓</span>}</>}
+          <span style={{fontSize:11,color:"rgba(255,255,255,0.55)"}}>{expanded?"▾":"▸"}</span>
         </div>
-        {isOpen&&<div style={{display:"grid",gridTemplateColumns:isSS?"1fr 1fr auto":"1fr auto",padding:"6px 12px 4px",borderBottom:`1px solid ${C.border}`}}>
+      </div>
+      {expanded&&<>
+        <div style={{display:"grid",gridTemplateColumns:isSS?"1fr 1fr auto":"1fr auto",padding:"6px 12px 4px",borderBottom:`1px solid ${C.border}`}}>
           {ss.exercises.map(ex=>(<div key={ex.id}>
               <div style={{display:"flex",alignItems:"center",gap:4}}>
                 {swapId===ex.id?(<div style={{position:"relative"}}>
@@ -468,8 +466,8 @@ function ExGrid({supersets,sets,onChange,onDone,bw,mesoWeek,onAdd,onRemove,onMov
                     {onExNote&&<span onClick={()=>setNoteOpen(noteOpen===ex.id?null:ex.id)}
                       style={{fontSize:12,cursor:"pointer",opacity:exNotes?.[ex.id]?1:0.35}}>💬</span>}
                     {onExFeel&&<span onClick={()=>{const cur=exFeel?.[ex.id]||"";const cycle={"":"more","more":"growth","growth":"ok","ok":"twinge","twinge":"pain","pain":"less","less":""};onExFeel(ex.id,cycle[cur]||"");}}
-                      style={{fontSize:12,cursor:"pointer",opacity:exFeel?.[ex.id]?1:0.3}}>
-                      {({more:"➕",growth:"💪",ok:"💚",twinge:"⚠️",pain:"🔴",less:"➖"}[exFeel?.[ex.id]]||"◽")}</span>}
+                      style={{fontSize:12,cursor:"pointer",opacity:exFeel?.[ex.id]?1:0.15}}>
+                      {{"more":"➕","growth":"💪","ok":"💚","twinge":"⚠️","pain":"🔴","less":"➖"}[exFeel?.[ex.id]]||"◽"}</span>}
                   </div>
                 </>)}
               </div>
@@ -478,16 +476,16 @@ function ExGrid({supersets,sets,onChange,onDone,bw,mesoWeek,onAdd,onRemove,onMov
                   style={{width:"100%",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:6,padding:"5px 8px",fontSize:11,color:C.text,fontFamily:SANS,outline:"none",boxSizing:"border-box"}}/>
               </div>}
               <div style={{display:"flex",alignItems:"center",gap:4}}>
-                {onChange&&!ex.trackWatts&&sets[ex.id]?.length>1&&sets[ex.id][0]?.weight&&<span onClick={()=>{const f=sets[ex.id][0];sets[ex.id].forEach((_,j)=>{if(j>0){onChange(ex.id,j,"weight",f.weight);if(f.reps)onChange(ex.id,j,"reps",f.reps);}});}} style={{fontSize:10,color:C.blue,cursor:"pointer",fontFamily:SANS}}>⇊</span>}
                 <span style={{fontSize:10,color:C.textDim,fontFamily:MONO}}>{ex.baseSets}×{ex.reps}</span>
               </div>
             </div>))}          <div/>
         </div>
         {Array.from({length:numS},(_,i)=>{
           const rowDone=ss.exercises.every(ex=>sets[ex.id]?.[i]?.done);
+          const canCopyDown=onChange&&i===0&&numS>1;
           return(
             <div key={i} style={{display:"grid",gridTemplateColumns:isSS?"1fr 1fr auto":"1fr auto",padding:"5px 12px",borderBottom:`1px solid ${C.borderLight}`,background:rowDone?C.yellowDim:"transparent",alignItems:"center"}}>
-              {ss.exercises.map(ex=>{const s=sets[ex.id]?.[i]||{};return(
+              {ss.exercises.map(ex=>{const s=sets[ex.id]?.[i]||{};const showCopyDown=canCopyDown&&!ex.trackWatts&&sets[ex.id]?.[0]?.weight;return(
                 <div key={ex.id} style={{paddingRight:6}}>
                   {ex.trackWatts?(
                     <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
@@ -504,6 +502,7 @@ function ExGrid({supersets,sets,onChange,onDone,bw,mesoWeek,onAdd,onRemove,onMov
                       <input type="number" value={s.weight||""} onChange={e=>onChange(ex.id,i,"weight",e.target.value)} style={sty.input(46)} placeholder="kg"/>
                       <span style={{fontSize:10,color:C.textDim}}>×</span>
                       <input type="text" value={s.reps||""} onChange={e=>onChange(ex.id,i,"reps",e.target.value)} style={sty.input(46)} placeholder={ex.reps}/>
+                      {showCopyDown&&<span onClick={()=>{const f=sets[ex.id][0];sets[ex.id].forEach((_,j)=>{if(j>0){onChange(ex.id,j,"weight",f.weight);if(f.reps)onChange(ex.id,j,"reps",f.reps);}});}} title="Copy to remaining sets" style={{fontSize:11,color:C.blue,cursor:"pointer",fontFamily:SANS,marginLeft:2}}>⇊</span>}
                       {ex.trackGrip&&<span onClick={()=>onChange(ex.id,i,"grip",s.grip==="W"?"P":s.grip==="P"?"C":"W")}
                         style={{fontSize:10,fontWeight:700,fontFamily:MONO,cursor:"pointer",padding:"4px 7px",borderRadius:6,marginLeft:2,
                           background:s.grip==="W"?C.blue:s.grip==="P"?C.teal:s.grip==="C"?C.purple:C.surface,
@@ -515,9 +514,15 @@ function ExGrid({supersets,sets,onChange,onDone,bw,mesoWeek,onAdd,onRemove,onMov
               </button>
             </div>);
         })}
-        {onAdd&&<div style={{display:"flex",justifyContent:"center",gap:16,padding:"5px 0"}}>{onRemove&&numS>1&&<span onClick={()=>onRemove(ss)} style={{fontSize:11,color:C.red,cursor:"pointer",fontFamily:SANS}}>− set</span>}<span onClick={()=>onAdd(ss)} style={{fontSize:11,color:C.textDim,cursor:"pointer",fontFamily:SANS}}>+ set</span></div>}}
-      </div>);
-  });
+        {onAdd&&<div style={{display:"flex",justifyContent:"center",gap:16,padding:"5px 0"}}>{onRemove&&numS>1&&<span onClick={()=>onRemove(ss)} style={{fontSize:11,color:C.red,cursor:"pointer",fontFamily:SANS}}>− set</span>}<span onClick={()=>onAdd(ss)} style={{fontSize:11,color:C.textDim,cursor:"pointer",fontFamily:SANS}}>+ set</span></div>}
+      </>}
+    </div>);
+});
+
+function ExGrid({supersets,sets,onChange,onDone,bw,mesoWeek,onAdd,onRemove,onMove,onSwap,exFeel,onExFeel,exNotes,onExNote,exReg}) {
+  return supersets.map((ss,si)=>(
+    <SupersetCard key={ss.id} ss={ss} si={si} total={supersets.length} sets={sets} onChange={onChange} onDone={onDone} bw={bw} onAdd={onAdd} onRemove={onRemove} onMove={onMove} onSwap={onSwap} exFeel={exFeel} onExFeel={onExFeel} exNotes={exNotes} onExNote={onExNote} exReg={exReg}/>
+  ));
 }
 
 // ─── HOME ───────────────────────────────────────────────────────────────────
@@ -920,7 +925,6 @@ function Progress({gym,health,plan,ftp,idMap,exReg,z2Target,profile,onGoToDate})
 function Schedule({gym,saveGym,plan,mesoWeek,setMesoWeek,mesoCycle,setMesoCycle,health,autoExp,plans,dayRange=14,startRest,idMap,exReg}) {
   const [expDate,setExpDate]=useState(null);const [sets,setSets]=useState({});const [notes,setNotes]=useState("");const [bw,setBw]=useState("");const [feel,setFeel]=useState("");
   const [ssOrd,setSsOrd]=useState(null);const [swaps,setSwaps]=useState({});const [ss,setSs2]=useState(null);const [cheerMsg,setCheerMsg]=useState("");
-  const [sessionNoteOpen,setSessionNoteOpen]=useState(false);
   const [localMeso,setLocalMeso]=useState(null);const [moveTarget,setMoveTarget]=useState(null);const [exFeel,setExFeel]=useState({});const [exNotes,setExNotes]=useState({});const [z2Ride,setZ2Ride]=useState(null);const [z2Paste,setZ2Paste]=useState("");const [mobility,setMobility]=useState(false);const [notePopup,setNotePopup]=useState(null);
   const todayRef=useRef(null);const editRef=useRef({});const routine=plan?.days||{};
   const wSugg=useMemo(()=>mesoWeek===1?getWeightSuggestions(gym,plan,mesoCycle):{},[gym,plan,mesoCycle,mesoWeek]);
@@ -945,7 +949,7 @@ function Schedule({gym,saveGym,plan,mesoWeek,setMesoWeek,mesoCycle,setMesoCycle,
   for(let i=-pastDays;i<=futureDays;i++){const d=new Date(today);d.setDate(today.getDate()+i);days.push(d);}
 
   const openDay=(ds,pd)=>{
-    if(expDate===ds){setExpDate(null);return;} setExpDate(ds);setNotePopup(null);setSs2(null);setCheerMsg("");setMoveTarget(null);setZ2Paste("");setLocalMeso(null);setSessionNoteOpen(false);
+    if(expDate===ds){setExpDate(null);return;} setExpDate(ds);setNotePopup(null);setSs2(null);setCheerMsg("");setMoveTarget(null);setZ2Paste("");setLocalMeso(null);
     const logged=gym[ds];
     if(logged){setSets(logged.sets||{});setNotes(logged.notes||"");setBw(logged.bodyWeight?String(logged.bodyWeight):"");setSsOrd(logged.ssOrder||null);setFeel(logged.feel||"");setSwaps(logged.exSwaps||{});setExFeel(logged.exFeel||{});setExNotes(logged.exNotes||{});setZ2Ride(logged.z2Ride||null);setMobility(logged.mobility||false);}
     else{setSets(initSets(routine,pd,mesoWeek,gym));setNotes("");setBw("");setSsOrd(null);setFeel("");setSwaps({});setExFeel({});setExNotes({});setZ2Ride(null);setMobility(false);}
@@ -957,7 +961,7 @@ function Schedule({gym,saveGym,plan,mesoWeek,setMesoWeek,mesoCycle,setMesoCycle,
   const handleDone=(ss,idx)=>{
     const allDone=ss.exercises.every(ex=>sets[ex.id]?.[idx]?.done);
     ss.exercises.forEach(ex=>logSet(ex.id,idx,"done",!allDone));
-    if(!allDone){startRest(240);}
+    if(!allDone){try{navigator.vibrate?.(10);}catch{}const isSS=ss.exercises.length>1;const tot=(sets[ss.exercises[0].id]||[]).length;startRest(240);}
   };
   const saveDay=(ds,pd)=>{
     const saveBW=bw?Number(bw):getWeight(gym,health);
@@ -1097,18 +1101,12 @@ function Schedule({gym,saveGym,plan,mesoWeek,setMesoWeek,mesoCycle,setMesoCycle,
                           </div>))}
                       </div>
                     </div>
-                    <div style={{display:"flex",gap:6,marginBottom:8,alignItems:"stretch"}}>
-                      <div onClick={()=>setMobility(!mobility)} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,cursor:"pointer",flex:1,
-                        background:mobility?"rgba(42,140,122,0.1)":C.cardAlt,border:`1px solid ${mobility?C.teal:C.border}`}}>
-                        <span style={{fontSize:16}}>{mobility?"🧘":"⬜"}</span>
-                        <span style={{fontSize:12,fontWeight:600,color:mobility?C.teal:C.textDim,fontFamily:SANS}}>Mobility done</span>
-                      </div>
-                      <div onClick={()=>setSessionNoteOpen(!sessionNoteOpen)} style={{display:"flex",alignItems:"center",justifyContent:"center",padding:"8px 14px",borderRadius:8,cursor:"pointer",
-                        background:notes?C.cardAlt:C.cardAlt,border:`1px solid ${notes?C.blue:C.border}`}}>
-                        <span style={{fontSize:16,opacity:notes?1:0.4}}>💬</span>
-                      </div>
+                    <div onClick={()=>setMobility(!mobility)} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,cursor:"pointer",marginBottom:8,
+                      background:mobility?"rgba(42,140,122,0.1)":C.cardAlt,border:`1px solid ${mobility?C.teal:C.border}`}}>
+                      <span style={{fontSize:16}}>{mobility?"🧘":"⬜"}</span>
+                      <span style={{fontSize:12,fontWeight:600,color:mobility?C.teal:C.textDim,fontFamily:SANS}}>Mobility done</span>
                     </div>
-                    {sessionNoteOpen&&<textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Session notes…" autoFocus style={{width:"100%",borderRadius:8,border:`1px solid ${C.border}`,background:C.cardAlt,padding:"8px 10px",fontSize:12,color:C.text,minHeight:40,resize:"vertical",boxSizing:"border-box",marginBottom:8,fontFamily:SANS,outline:"none"}}/>}
+                    <textarea value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Session notes…" style={{width:"100%",borderRadius:8,border:`1px solid ${C.border}`,background:C.cardAlt,padding:"8px 10px",fontSize:12,color:C.text,minHeight:40,resize:"vertical",boxSizing:"border-box",marginBottom:8,fontFamily:SANS,outline:"none"}}/>
                     {z2Ride&&<div style={{background:"rgba(42,140,122,0.08)",border:`1px solid rgba(42,140,122,0.25)`,borderRadius:8,padding:"8px 12px",marginBottom:8}}>
                       <div style={{fontSize:10,fontWeight:700,color:C.teal,fontFamily:SANS,marginBottom:4}}>🚴 Z2 RIDE</div>
                       <div style={{fontSize:11,color:C.text,fontFamily:MONO,lineHeight:1.8}}>
@@ -1191,242 +1189,307 @@ class ErrorGuard extends React.Component {
 }
 
 // ─── FOOD ───────────────────────────────────────────────────────────────────
+// Seed ingredients — per 100g macros (kcal, protein, fat, carbs)
+const SEED_INGREDIENTS = [
+  // Proteins — poultry/meat/fish
+  {id:"chicken_breast",name:"Chicken breast",cat:"protein",kcal:165,p:31,f:3.6,c:0},
+  {id:"chicken_thigh",name:"Chicken thigh",cat:"protein",kcal:209,p:26,f:11,c:0},
+  {id:"turkey_breast",name:"Turkey breast",cat:"protein",kcal:135,p:30,f:1,c:0},
+  {id:"beef_mince_5",name:"Beef mince 5% fat",cat:"protein",kcal:137,p:21,f:5,c:0},
+  {id:"beef_mince_15",name:"Beef mince 15% fat",cat:"protein",kcal:215,p:19,f:15,c:0},
+  {id:"beef_steak",name:"Beef steak (sirloin)",cat:"protein",kcal:206,p:29,f:10,c:0},
+  {id:"pork_loin",name:"Pork loin",cat:"protein",kcal:242,p:27,f:14,c:0},
+  {id:"bacon",name:"Bacon",cat:"protein",kcal:393,p:28,f:31,c:1},
+  {id:"salmon",name:"Salmon fillet",cat:"protein",kcal:208,p:20,f:13,c:0},
+  {id:"tuna_tin",name:"Tuna (tinned, water)",cat:"protein",kcal:116,p:26,f:1,c:0},
+  {id:"cod",name:"Cod",cat:"protein",kcal:82,p:18,f:0.7,c:0},
+  {id:"makrell_tomat",name:"Makrell i tomat",cat:"protein",kcal:170,p:12,f:11,c:5},
+  {id:"prawns",name:"Prawns",cat:"protein",kcal:99,p:24,f:0.3,c:0.2},
+  {id:"eggs",name:"Eggs (whole)",cat:"protein",kcal:143,p:13,f:10,c:1},
+  {id:"egg_whites",name:"Egg whites",cat:"protein",kcal:52,p:11,f:0.2,c:0.7},
+  {id:"tofu_firm",name:"Tofu (firm)",cat:"protein",kcal:144,p:17,f:9,c:3},
+  {id:"tempeh",name:"Tempeh",cat:"protein",kcal:192,p:20,f:11,c:8},
+  {id:"whey_protein",name:"Whey protein",cat:"protein",kcal:380,p:80,f:5,c:8},
+  // Dairy
+  {id:"skyr",name:"Skyr (plain)",cat:"dairy",kcal:63,p:11,f:0.2,c:4},
+  {id:"greek_yogurt",name:"Greek yogurt 2%",cat:"dairy",kcal:73,p:10,f:2,c:4},
+  {id:"cottage_cheese",name:"Cottage cheese",cat:"dairy",kcal:98,p:11,f:4,c:3},
+  {id:"milk_semi",name:"Milk (semi-skimmed)",cat:"dairy",kcal:50,p:3.4,f:1.8,c:4.8},
+  {id:"cheddar",name:"Cheddar cheese",cat:"dairy",kcal:403,p:25,f:33,c:1.3},
+  {id:"feta",name:"Feta",cat:"dairy",kcal:264,p:14,f:21,c:4},
+  {id:"brunost",name:"Brunost (Norwegian brown cheese)",cat:"dairy",kcal:466,p:9,f:30,c:42},
+  {id:"butter",name:"Butter",cat:"dairy",kcal:717,p:0.9,f:81,c:0.1},
+  // Grains & starches
+  {id:"oats",name:"Oats (dry)",cat:"grain",kcal:379,p:13,f:7,c:68},
+  {id:"rice_white_cooked",name:"White rice (cooked)",cat:"grain",kcal:130,p:2.7,f:0.3,c:28},
+  {id:"rice_brown_cooked",name:"Brown rice (cooked)",cat:"grain",kcal:123,p:2.7,f:1,c:26},
+  {id:"pasta_cooked",name:"Pasta (cooked)",cat:"grain",kcal:131,p:5,f:1.1,c:25},
+  {id:"bread_white",name:"White bread",cat:"grain",kcal:265,p:9,f:3.2,c:49},
+  {id:"bread_wholemeal",name:"Wholemeal bread",cat:"grain",kcal:247,p:13,f:4.2,c:41},
+  {id:"knekkebrod",name:"Knekkebrød",cat:"grain",kcal:366,p:11,f:2.5,c:71},
+  {id:"potato_boiled",name:"Potato (boiled)",cat:"grain",kcal:87,p:1.9,f:0.1,c:20},
+  {id:"sweet_potato",name:"Sweet potato (baked)",cat:"grain",kcal:90,p:2,f:0.2,c:21},
+  {id:"quinoa_cooked",name:"Quinoa (cooked)",cat:"grain",kcal:120,p:4.4,f:1.9,c:21},
+  {id:"couscous_cooked",name:"Couscous (cooked)",cat:"grain",kcal:112,p:3.8,f:0.2,c:23},
+  // Legumes
+  {id:"lentils_cooked",name:"Lentils (cooked)",cat:"legume",kcal:116,p:9,f:0.4,c:20},
+  {id:"chickpeas_cooked",name:"Chickpeas (cooked)",cat:"legume",kcal:164,p:9,f:2.6,c:27},
+  {id:"black_beans",name:"Black beans (cooked)",cat:"legume",kcal:132,p:9,f:0.5,c:24},
+  {id:"kidney_beans",name:"Kidney beans (cooked)",cat:"legume",kcal:127,p:9,f:0.5,c:23},
+  {id:"baked_beans",name:"Baked beans (tinned)",cat:"legume",kcal:94,p:5,f:0.4,c:15},
+  {id:"peanut_butter",name:"Peanut butter",cat:"legume",kcal:588,p:25,f:50,c:20},
+  // Vegetables
+  {id:"broccoli",name:"Broccoli",cat:"veg",kcal:34,p:2.8,f:0.4,c:7},
+  {id:"spinach",name:"Spinach",cat:"veg",kcal:23,p:2.9,f:0.4,c:3.6},
+  {id:"kale",name:"Kale",cat:"veg",kcal:49,p:4.3,f:0.9,c:9},
+  {id:"carrot",name:"Carrot",cat:"veg",kcal:41,p:0.9,f:0.2,c:10},
+  {id:"tomato",name:"Tomato",cat:"veg",kcal:18,p:0.9,f:0.2,c:3.9},
+  {id:"cucumber",name:"Cucumber",cat:"veg",kcal:16,p:0.7,f:0.1,c:3.6},
+  {id:"bell_pepper",name:"Bell pepper",cat:"veg",kcal:31,p:1,f:0.3,c:6},
+  {id:"onion",name:"Onion",cat:"veg",kcal:40,p:1.1,f:0.1,c:9},
+  {id:"garlic",name:"Garlic",cat:"veg",kcal:149,p:6.4,f:0.5,c:33},
+  {id:"mushroom",name:"Mushroom",cat:"veg",kcal:22,p:3.1,f:0.3,c:3.3},
+  {id:"courgette",name:"Courgette",cat:"veg",kcal:17,p:1.2,f:0.3,c:3.1},
+  {id:"cauliflower",name:"Cauliflower",cat:"veg",kcal:25,p:1.9,f:0.3,c:5},
+  {id:"avocado",name:"Avocado",cat:"veg",kcal:160,p:2,f:15,c:9},
+  // Fruit
+  {id:"banana",name:"Banana",cat:"fruit",kcal:89,p:1.1,f:0.3,c:23},
+  {id:"apple",name:"Apple",cat:"fruit",kcal:52,p:0.3,f:0.2,c:14},
+  {id:"orange",name:"Orange",cat:"fruit",kcal:47,p:0.9,f:0.1,c:12},
+  {id:"blueberries",name:"Blueberries",cat:"fruit",kcal:57,p:0.7,f:0.3,c:14},
+  {id:"strawberries",name:"Strawberries",cat:"fruit",kcal:32,p:0.7,f:0.3,c:8},
+  {id:"raspberries",name:"Raspberries",cat:"fruit",kcal:52,p:1.2,f:0.7,c:12},
+  {id:"grapes",name:"Grapes",cat:"fruit",kcal:69,p:0.7,f:0.2,c:18},
+  {id:"pear",name:"Pear",cat:"fruit",kcal:57,p:0.4,f:0.1,c:15},
+  {id:"dates",name:"Dates (pitted)",cat:"fruit",kcal:282,p:2.5,f:0.4,c:75},
+  {id:"raisins",name:"Raisins",cat:"fruit",kcal:299,p:3.1,f:0.5,c:79},
+  // Nuts & seeds
+  {id:"almonds",name:"Almonds",cat:"nuts",kcal:579,p:21,f:50,c:22},
+  {id:"walnuts",name:"Walnuts",cat:"nuts",kcal:654,p:15,f:65,c:14},
+  {id:"cashews",name:"Cashews",cat:"nuts",kcal:553,p:18,f:44,c:30},
+  {id:"peanuts",name:"Peanuts",cat:"nuts",kcal:567,p:26,f:49,c:16},
+  {id:"chia",name:"Chia seeds",cat:"nuts",kcal:486,p:17,f:31,c:42},
+  {id:"flax",name:"Flax seeds",cat:"nuts",kcal:534,p:18,f:42,c:29},
+  {id:"pumpkin_seeds",name:"Pumpkin seeds",cat:"nuts",kcal:559,p:30,f:49,c:11},
+  // Fats & oils
+  {id:"olive_oil",name:"Olive oil",cat:"fat",kcal:884,p:0,f:100,c:0},
+  {id:"rapeseed_oil",name:"Rapeseed oil",cat:"fat",kcal:884,p:0,f:100,c:0},
+  {id:"coconut_oil",name:"Coconut oil",cat:"fat",kcal:862,p:0,f:100,c:0},
+  {id:"mayo",name:"Mayonnaise",cat:"fat",kcal:680,p:1,f:75,c:0.6},
+  // Other staples
+  {id:"honey",name:"Honey",cat:"other",kcal:304,p:0.3,f:0,c:82},
+  {id:"dark_choc_70",name:"Dark chocolate 70%",cat:"other",kcal:598,p:8,f:43,c:46},
+  {id:"hummus",name:"Hummus",cat:"other",kcal:166,p:8,f:10,c:14},
+  {id:"soy_sauce",name:"Soy sauce",cat:"other",kcal:53,p:8,f:0.1,c:5},
+];
+
 function Food({health,saveH,profile}) {
   const [tab,setTab]=useState("plate");
-  const [q,setQ]=useState("");
-  const [plate,setPlate]=useState([]);
-  const [mn,setMN]=useState("");
-  const [md,setMD]=useState(todayStr());
-  const [qc,setQC]=useState("");
-  const [qn,setQN]=useState("");
-  const [ss,setSs]=useState("");
-  const [hd,setHd]=useState(7);
+  const [ss,setSs]=useState(null);
+  // Plate state
+  const [plateQ,setPlateQ]=useState("");
+  const [plate,setPlate]=useState([]); // [{id,name,grams,kcal,p,f,c}]
+  const [mealName,setMealName]=useState("");
+  const [mealDate,setMealDate]=useState(todayStr());
+  const [mealTime,setMealTime]=useState("");
+  // History state
+  const [histDays,setHistDays]=useState(7);
+  const [expDate,setExpDate]=useState(null);
+  const [confirmDel,setConfirmDel]=useState(null);
+  const [mealSort,setMealSort]=useState("time");
+  // Quick state
+  const [qCal,setQCal]=useState("");const [qProt,setQProt]=useState("");const [qName,setQName]=useState("");const [qDate,setQDate]=useState(todayStr());
+  const [qTime,setQTime]=useState("");
 
-  const SEED=[
-    {id:"s1",n:"Chicken breast",cat:"🥩",cal:165,p:31,c:0,f:3.6,g:150},
-    {id:"s2",n:"Salmon",cat:"🥩",cal:208,p:20,c:0,f:13,g:150},
-    {id:"s3",n:"Egg",cat:"🥩",cal:147,p:12.6,c:0.7,f:10.3,g:120},
-    {id:"s4",n:"Ground beef",cat:"🥩",cal:254,p:17.2,c:0,f:20,g:150},
-    {id:"s5",n:"Cod",cat:"🥩",cal:82,p:18,c:0,f:0.7,g:150},
-    {id:"s6",n:"Tuna canned",cat:"🥩",cal:130,p:26,c:0,f:2,g:95},
-    {id:"s7",n:"Turkey",cat:"🥩",cal:135,p:30,c:0,f:1.5,g:150},
-    {id:"s8",n:"Bacon",cat:"🥩",cal:540,p:37,c:0,f:42,g:60},
-    {id:"s9",n:"Protein powder",cat:"🥩",cal:380,p:75,c:7,f:5,g:30},
-    {id:"s10",n:"Whole milk",cat:"🧀",cal:61,p:3.2,c:4.8,f:3.5,g:200},
-    {id:"s11",n:"Greek yoghurt",cat:"🧀",cal:97,p:9,c:3.6,f:5,g:150},
-    {id:"s12",n:"Cottage cheese",cat:"🧀",cal:98,p:11,c:3.4,f:4.3,g:100},
-    {id:"s13",n:"Cheese",cat:"🧀",cal:402,p:25,c:0.5,f:33,g:30},
-    {id:"s14",n:"Butter",cat:"🧀",cal:717,p:0.6,c:0.6,f:81,g:10},
-    {id:"s15",n:"Oats",cat:"🍞",cal:379,p:13,c:67,f:6.5,g:50},
-    {id:"s16",n:"Bread",cat:"🍞",cal:265,p:8,c:49,f:3,g:35},
-    {id:"s17",n:"Pasta",cat:"🍞",cal:350,p:12,c:72,f:1.5,g:100},
-    {id:"s18",n:"White rice",cat:"🍞",cal:360,p:6.7,c:79,f:0.7,g:80},
-    {id:"s19",n:"Potato",cat:"🍞",cal:77,p:2,c:17,f:0.1,g:150},
-    {id:"s20",n:"Sweet potato",cat:"🍞",cal:86,p:1.6,c:20,f:0.1,g:150},
-    {id:"s21",n:"Banana",cat:"🍎",cal:89,p:1.1,c:23,f:0.3,g:120},
-    {id:"s22",n:"Apple",cat:"🍎",cal:52,p:0.3,c:14,f:0.2,g:180},
-    {id:"s23",n:"Blueberries",cat:"🍎",cal:57,p:0.7,c:14,f:0.3,g:80},
-    {id:"s24",n:"Avocado",cat:"🍎",cal:160,p:2,c:8.5,f:15,g:75},
-    {id:"s25",n:"Tomato",cat:"🥦",cal:18,p:0.9,c:3.9,f:0.2,g:100},
-    {id:"s26",n:"Broccoli",cat:"🥦",cal:34,p:2.8,c:7,f:0.4,g:100},
-    {id:"s27",n:"Spinach",cat:"🥦",cal:23,p:2.9,c:3.6,f:0.4,g:50},
-    {id:"s28",n:"Salad",cat:"🥦",cal:15,p:1.3,c:2.2,f:0.2,g:30},
-    {id:"s29",n:"Mushrooms",cat:"🥦",cal:22,p:3.1,c:3.3,f:0.3,g:80},
-    {id:"s30",n:"Carrot",cat:"🥦",cal:41,p:0.9,c:10,f:0.2,g:80},
-    {id:"s31",n:"Peas",cat:"🥦",cal:81,p:5.4,c:14,f:0.4,g:60},
-    {id:"s32",n:"Lentils",cat:"🥦",cal:116,p:9,c:20,f:0.4,g:150},
-    {id:"s33",n:"Almonds",cat:"🌰",cal:579,p:21,c:22,f:50,g:25},
-    {id:"s34",n:"Peanut butter",cat:"🌰",cal:588,p:25,c:20,f:50,g:20},
-    {id:"s35",n:"Olive oil",cat:"🍯",cal:884,p:0,c:0,f:100,g:14},
-    {id:"s36",n:"Honey",cat:"🍯",cal:304,p:0.3,c:82,f:0,g:10},
-    {id:"s37",n:"Brunost",cat:"🍯",cal:466,p:10,c:43,f:28,g:20},
-    {id:"s38",n:"Leverpostei",cat:"🍯",cal:250,p:11,c:6,f:20,g:30}
-  ];
+  useEffect(()=>{const handler=(e)=>{setTab("history");setHistDays(9999);setExpDate(e.detail);};window.addEventListener("claudefit-goto-food",handler);return()=>window.removeEventListener("claudefit-goto-food",handler);},[]);
 
-  const matches=q.trim().length<2?[]:SEED.filter(i=>i.n.toLowerCase().indexOf(q.trim().toLowerCase())>=0).slice(0,15);
-  let tCal=0,tP=0,tC=0,tF=0;
-  for(let i=0;i<plate.length;i++){const x=plate[i];const m=(x.g||0)/100;tCal+=x.cal*m;tP+=x.p*m;tC+=x.c*m;tF+=x.f*m;}
-  tCal=Math.round(tCal);tP=Math.round(tP*10)/10;tC=Math.round(tC*10)/10;tF=Math.round(tF*10)/10;
+  // Filter ingredients by query
+  const matches=useMemo(()=>{
+    const q=plateQ.trim().toLowerCase();
+    if(q.length<1)return [];
+    return SEED_INGREDIENTS.filter(i=>i.name.toLowerCase().includes(q)).slice(0,12);
+  },[plateQ]);
 
-  const addIng=(i)=>{const next=plate.slice();next.push({id:i.id,n:i.n,cat:i.cat,cal:i.cal,p:i.p,c:i.c,f:i.f,g:i.g});setPlate(next);setQ("");};
-  const updG=(idx,v)=>{const next=plate.slice();next[idx]=Object.assign({},next[idx],{g:Number(v)||0});setPlate(next);};
-  const rm=(idx)=>{const next=plate.slice();next.splice(idx,1);setPlate(next);};
+  const addToPlate=(ing)=>{
+    setPlate(p=>[...p,{id:`${ing.id}_${Date.now()}`,name:ing.name,grams:100,kcal:ing.kcal,p:ing.p,f:ing.f,c:ing.c}]);
+    setPlateQ("");
+  };
+  const updateGrams=(id,g)=>{const n=Math.max(0,Number(g)||0);setPlate(p=>p.map(i=>i.id===id?{...i,grams:n}:i));};
+  const removeFromPlate=(id)=>setPlate(p=>p.filter(i=>i.id!==id));
+  const clearPlate=()=>{setPlate([]);setMealName("");setMealTime("");};
 
-  const saveMeal=(meal)=>{
-    setSs("Saving...");
-    const date=meal.date;
-    const nl=health.slice();
-    const existing=nl.find(e=>e.date===date);
-    const ex=existing||{date:date,weight:"",mood:"3",readiness:"3",notes:""};
-    const all=(ex.meals||[]).slice();
-    all.push(meal);
-    let sumC=0,sumP=0,sumF=0,sumCb=0;
-    for(let i=0;i<all.length;i++){sumC+=all[i].calories||0;sumP+=all[i].protein_g||0;sumF+=all[i].fat_g||0;sumCb+=all[i].carbs_g||0;}
-    const updated=Object.assign({},ex,{meals:all,calories:String(Math.round(sumC)),protein:String(Math.round(sumP)),fat:String(Math.round(sumF)),carbs:String(Math.round(sumCb))});
-    const filtered=nl.filter(e=>e.date!==date);
-    filtered.push(updated);
-    filtered.sort((a,b)=>a.date.localeCompare(b.date));
-    saveH(filtered,s=>{
-      if(s==="saved"){setSs("✓ Saved");setPlate([]);setMN("");setMD(todayStr());setTimeout(()=>setSs(""),1500);}
-      else if(s==="error"){setSs("✗ Save failed");setTimeout(()=>setSs(""),2500);}
-    });
+  const plateTotals=useMemo(()=>plate.reduce((a,i)=>{
+    const f=i.grams/100;
+    return{cal:a.cal+i.kcal*f,p:a.p+i.p*f,f:a.f+i.f*f,c:a.c+i.c*f};
+  },{cal:0,p:0,f:0,c:0}),[plate]);
+
+  const savePlate=()=>{
+    if(!plate.length)return;
+    const date=mealDate||todayStr();
+    const name=mealName.trim()||"Meal";
+    const desc=plate.map(i=>`${Math.round(i.grams)}g ${i.name}`).join(", ");
+    const meal={name,time:mealTime||"",calories:Math.round(plateTotals.cal),protein_g:Math.round(plateTotals.p),fat_g:Math.round(plateTotals.f),carbs_g:Math.round(plateTotals.c),description:desc};
+    setSs("saving");
+    let nl=[...health];
+    const ex=nl.find(e=>e.date===date)||{date,weight:"",mood:"3",readiness:"3",notes:""};
+    const all=[...(ex.meals||[]),meal];
+    const t=all.reduce((a,m)=>({cal:a.cal+m.calories,p:a.p+m.protein_g,f:a.f+m.fat_g,c:a.c+m.carbs_g}),{cal:0,p:0,f:0,c:0});
+    nl=[...nl.filter(e=>e.date!==date),{...ex,meals:all,calories:String(Math.round(t.cal)),protein:String(Math.round(t.p)),fat:String(Math.round(t.f)),carbs:String(Math.round(t.c))}];
+    nl.sort((a,b)=>a.date.localeCompare(b.date));
+    saveH(nl,s=>{setSs(s);if(s==="saved"){clearPlate();setTimeout(()=>{setSs(null);setTab("history");},1200);}else setTimeout(()=>setSs(null),2500);});
   };
 
-  const logPlate=()=>{
-    if(plate.length===0)return;
-    const names=plate.map(i=>i.n).join(", ");
-    const meal={date:md,time:"",name:mn||"Plate",calories:tCal,protein_g:tP,carbs_g:tC,fat_g:tF,description:names};
-    saveMeal(meal);
+  const quickAdd=()=>{
+    if(!qCal)return;
+    const date=qDate||todayStr();
+    const meal={name:qName.trim()||"Quick",time:qTime||"",calories:Number(qCal)||0,protein_g:Number(qProt)||0,fat_g:0,carbs_g:0,description:""};
+    setSs("saving");
+    let nl=[...health];
+    const ex=nl.find(e=>e.date===date)||{date,weight:"",mood:"3",readiness:"3",notes:""};
+    const all=[...(ex.meals||[]),meal];
+    const t=all.reduce((a,m)=>({cal:a.cal+m.calories,p:a.p+m.protein_g,f:a.f+m.fat_g,c:a.c+m.carbs_g}),{cal:0,p:0,f:0,c:0});
+    nl=[...nl.filter(e=>e.date!==date),{...ex,meals:all,calories:String(Math.round(t.cal)),protein:String(Math.round(t.p)),fat:String(Math.round(t.f)),carbs:String(Math.round(t.c))}];
+    nl.sort((a,b)=>a.date.localeCompare(b.date));
+    saveH(nl,s=>{setSs(s);if(s==="saved"){setQCal("");setQProt("");setQName("");setQTime("");setQDate(todayStr());setTimeout(()=>setSs(null),1200);}else setTimeout(()=>setSs(null),2500);});
   };
 
-  const qAdd=()=>{
-    if(!qc)return;
-    const meal={date:todayStr(),time:"",name:qn||"Quick",calories:Number(qc),protein_g:0,carbs_g:0,fat_g:0,description:""};
-    setQC("");setQN("");
-    saveMeal(meal);
-  };
+  return(<div>
+    <div style={{display:"flex",gap:4,marginBottom:12,position:"sticky",top:50,zIndex:50,background:`rgba(245,241,236,0.92)`,backdropFilter:"blur(8px)",padding:"8px 0"}}>{[["plate","Plate"],["history","History"],["quick","Quick"]].map(([v,l])=>(<button key={v} onClick={()=>setTab(v)} style={sty.tab(tab===v)}>{l}</button>))}</div>
 
-  // Build history
-  const historyDays=[];
-  const nowD=new Date();nowD.setHours(0,0,0,0);
-  for(let i=hd-1;i>=0;i--){const dt=new Date(nowD);dt.setDate(nowD.getDate()-i);historyDays.push(localDate(dt));}
-  const historyRows=[];
-  for(let i=0;i<historyDays.length;i++){
-    const ds=historyDays[i];
-    const e=health.find(h=>h.date===ds);
-    if(e&&e.meals&&e.meals.length>0){
-      let sumCal=0;
-      for(let j=0;j<e.meals.length;j++)sumCal+=e.meals[j].calories||0;
-      historyRows.push({date:ds,meals:e.meals,totalCal:Math.round(sumCal)});
-    }
-  }
+    {tab==="plate"&&(<div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={sty.card}>
+        <div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:8,fontFamily:SANS}}>Search ingredients</div>
+        <input value={plateQ} onChange={e=>setPlateQ(e.target.value)} placeholder="chicken, rice, oats…" style={{width:"100%",background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:8,padding:"10px 12px",fontSize:13,color:C.text,fontFamily:SANS,outline:"none",boxSizing:"border-box"}}/>
+        {matches.length>0&&<div style={{marginTop:6,maxHeight:280,overflowY:"auto"}}>
+          {matches.map(ing=>(<div key={ing.id} onClick={()=>addToPlate(ing)} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",cursor:"pointer",borderBottom:`1px solid ${C.borderLight}`,background:C.cardAlt,borderRadius:4,marginBottom:2}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:12,fontWeight:600,color:C.text,fontFamily:SANS}}>{ing.name}</div>
+              <div style={{fontSize:10,color:C.textDim,fontFamily:MONO}}>{ing.cat} · /100g {ing.kcal}kcal P{ing.p} F{ing.f} C{ing.c}</div>
+            </div>
+            <span style={{fontSize:16,color:C.green,fontWeight:700,marginLeft:8}}>+</span>
+          </div>))}
+        </div>}
+        {plateQ.trim().length>=1&&matches.length===0&&<div style={{fontSize:11,color:C.textDim,fontFamily:SANS,marginTop:6}}>No match.</div>}
+      </div>
 
-  return React.createElement("div",null,
-    React.createElement("div",{style:{display:"flex",gap:4,marginBottom:12}},
-      React.createElement("button",{key:"tp",onClick:()=>setTab("plate"),style:sty.tab(tab==="plate")},"Plate"),
-      React.createElement("button",{key:"tq",onClick:()=>setTab("quick"),style:sty.tab(tab==="quick")},"Quick+"),
-      React.createElement("button",{key:"th",onClick:()=>setTab("history"),style:sty.tab(tab==="history")},"History")
-    ),
-    tab==="plate"&&React.createElement("div",{key:"plateTab"},
-      React.createElement("div",{style:sty.card},
-        React.createElement("div",{style:{fontSize:13,fontWeight:700,marginBottom:6,color:C.text,fontFamily:SANS}},"Add Ingredient"),
-        React.createElement("input",{
-          value:q,
-          onChange:e=>setQ(e.target.value),
-          placeholder:"salmon, bread, oats...",
-          style:{width:"100%",background:C.cardAlt,border:"1px solid "+C.border,borderRadius:8,padding:"8px 10px",fontSize:12,color:C.text,outline:"none",boxSizing:"border-box",fontFamily:SANS}
-        }),
-        matches.length>0&&React.createElement("div",{style:{marginTop:6,maxHeight:200,overflowY:"auto"}},
-          matches.map(i=>React.createElement("div",{
-            key:i.id,
-            onClick:()=>addIng(i),
-            style:{padding:"6px 8px",borderRadius:6,marginBottom:3,cursor:"pointer",background:C.cardAlt,display:"flex",justifyContent:"space-between"}
-          },
-            React.createElement("span",{style:{fontSize:12,color:C.text,fontFamily:SANS}},i.cat+" "+i.n),
-            React.createElement("span",{style:{fontSize:10,color:C.textDim,fontFamily:MONO}},i.cal+"cal P"+i.p+"g")
-          ))
-        )
-      ),
-      plate.length>0&&React.createElement("div",{style:sty.card,key:"plateCard"},
-        React.createElement("div",{style:{fontSize:13,fontWeight:700,marginBottom:8,color:C.text,fontFamily:SANS}},"Plate"),
-        plate.map((item,idx)=>React.createElement("div",{
-          key:"p"+idx,
-          style:{display:"flex",gap:6,alignItems:"center",marginBottom:6,padding:6,background:C.cardAlt,borderRadius:6}
-        },
-          React.createElement("span",{style:{fontSize:12}},item.cat),
-          React.createElement("span",{style:{flex:1,fontSize:11,color:C.text,fontFamily:SANS}},item.n),
-          React.createElement("input",{
-            type:"number",
-            value:item.g,
-            onChange:e=>updG(idx,e.target.value),
-            style:{width:50,background:C.surface,border:"1px solid "+C.border,borderRadius:4,padding:"2px 4px",fontSize:11,color:C.text,outline:"none",fontFamily:MONO}
-          }),
-          React.createElement("span",{style:{fontSize:9,color:C.textDim,fontFamily:SANS}},"g"),
-          React.createElement("button",{
-            onClick:()=>rm(idx),
-            style:{padding:"2px 6px",background:C.red,color:"white",border:"none",borderRadius:4,cursor:"pointer",fontSize:10,fontFamily:SANS}
-          },"×")
-        ))
-      ),
-      plate.length>0&&React.createElement("div",{style:sty.card,key:"totalsCard"},
-        React.createElement("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:8}},
-          React.createElement("div",{style:{fontSize:13,fontWeight:700,color:C.text,fontFamily:SANS}},"Totals"),
-          React.createElement("div",{style:{fontSize:11,fontFamily:MONO,color:C.textMid}},tCal+"kcal · P"+tP+"g · C"+tC+"g · F"+tF+"g")
-        ),
-        React.createElement("input",{
-          type:"text",
-          value:mn,
-          onChange:e=>setMN(e.target.value),
-          placeholder:"Meal name (optional)",
-          style:{width:"100%",background:C.cardAlt,border:"1px solid "+C.border,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",marginBottom:6,boxSizing:"border-box",fontFamily:SANS}
-        }),
-        React.createElement("input",{
-          type:"date",
-          value:md,
-          onChange:e=>setMD(e.target.value),
-          style:{width:"100%",background:C.cardAlt,border:"1px solid "+C.border,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",marginBottom:8,boxSizing:"border-box",fontFamily:MONO}
-        }),
-        React.createElement("button",{
-          onClick:logPlate,
-          style:Object.assign({},sty.btn(C.green,true),{fontSize:12,width:"100%"})
-        },"Log Plate"),
-        ss&&React.createElement("div",{style:{marginTop:6,fontSize:11,color:ss.indexOf("fail")>=0||ss.indexOf("✗")>=0?C.red:C.green,fontFamily:SANS}},ss)
-      ),
-      plate.length===0&&React.createElement("div",{
-        style:{textAlign:"center",color:C.textDim,fontSize:12,padding:16,fontFamily:SANS},
-        key:"empty"
-      },"Search and add ingredients above.")
-    ),
-    tab==="quick"&&React.createElement("div",{style:sty.card,key:"quickTab"},
-      React.createElement("div",{style:{fontSize:13,fontWeight:700,marginBottom:8,color:C.text,fontFamily:SANS}},"Quick Add"),
-      React.createElement("input",{
-        type:"text",
-        value:qn,
-        onChange:e=>setQN(e.target.value),
-        placeholder:"Name",
-        style:{width:"100%",background:C.cardAlt,border:"1px solid "+C.border,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",marginBottom:6,boxSizing:"border-box",fontFamily:SANS}
-      }),
-      React.createElement("div",{style:{display:"flex",gap:4,marginBottom:8}},
-        React.createElement("input",{
-          key:"qci",
-          type:"number",
-          value:qc,
-          onChange:e=>setQC(e.target.value),
-          placeholder:"kcal",
-          style:{flex:1,background:C.cardAlt,border:"1px solid "+C.border,borderRadius:6,padding:"6px 8px",fontSize:11,color:C.text,outline:"none",fontFamily:MONO}
-        }),
-        React.createElement("button",{
-          key:"qbtn",
-          onClick:qAdd,
-          disabled:!qc,
-          style:Object.assign({},sty.btn(C.green,true),{opacity:qc?1:0.4})
-        },"+")
-      ),
-      ss&&React.createElement("div",{style:{fontSize:11,color:ss.indexOf("fail")>=0||ss.indexOf("✗")>=0?C.red:C.green,fontFamily:SANS}},ss)
-    ),
-    tab==="history"&&React.createElement("div",{key:"histTab"},
-      React.createElement("div",{style:{display:"flex",gap:4,marginBottom:8}},
-        React.createElement("button",{key:"h7",onClick:()=>setHd(7),style:{fontSize:11,padding:"4px 10px",background:hd===7?C.yellow:C.surface,border:"none",borderRadius:6,cursor:"pointer",fontFamily:SANS,color:hd===7?C.dark:C.textMid}},"7d"),
-        React.createElement("button",{key:"h30",onClick:()=>setHd(30),style:{fontSize:11,padding:"4px 10px",background:hd===30?C.yellow:C.surface,border:"none",borderRadius:6,cursor:"pointer",fontFamily:SANS,color:hd===30?C.dark:C.textMid}},"30d"),
-        React.createElement("button",{key:"hall",onClick:()=>setHd(9999),style:{fontSize:11,padding:"4px 10px",background:hd===9999?C.yellow:C.surface,border:"none",borderRadius:6,cursor:"pointer",fontFamily:SANS,color:hd===9999?C.dark:C.textMid}},"All")
-      ),
-      historyRows.length===0
-        ?React.createElement("div",{style:{color:C.textDim,fontSize:12,textAlign:"center",padding:16,fontFamily:SANS}},"No meals logged in this range.")
-        :historyRows.map(r=>React.createElement("div",{key:r.date,style:sty.card},
-            React.createElement("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:6}},
-              React.createElement("div",{style:{fontSize:12,fontWeight:700,color:C.text,fontFamily:MONO}},r.date),
-              React.createElement("div",{style:{fontSize:11,fontFamily:MONO,color:C.textMid}},r.totalCal+"kcal")
-            ),
-            r.meals.map((m,i)=>React.createElement("div",{
-              key:"m"+i,
-              style:{display:"flex",justifyContent:"space-between",padding:"3px 0",fontSize:11,fontFamily:SANS,color:C.text}
-            },
-              React.createElement("span",null,m.name),
-              React.createElement("span",{style:{fontFamily:MONO}},m.calories+"kcal P"+m.protein_g+"g")
-            ))
-          ))
-    )
-  );
+      <div style={sty.card}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+          <div style={{fontWeight:700,fontSize:14,color:C.text,fontFamily:SANS}}>Plate</div>
+          {plate.length>0&&<span onClick={clearPlate} style={{fontSize:11,color:C.red,cursor:"pointer",fontFamily:SANS}}>Clear</span>}
+        </div>
+        {plate.length===0?(<div style={{fontSize:12,color:C.textDim,fontFamily:SANS}}>Empty. Add ingredients above.</div>):
+        (<>
+          <table style={{width:"100%",fontSize:11,fontFamily:SANS,borderCollapse:"collapse"}}>
+            <thead><tr style={{color:C.textDim,fontFamily:MONO,fontSize:10}}>
+              <th style={{textAlign:"left",padding:"4px 2px"}}>Item</th>
+              <th style={{textAlign:"right",padding:"4px 2px",width:60}}>Grams</th>
+              <th style={{textAlign:"right",padding:"4px 2px"}}>kcal</th>
+              <th style={{textAlign:"right",padding:"4px 2px"}}>P</th>
+              <th style={{textAlign:"right",padding:"4px 2px"}}>F</th>
+              <th style={{textAlign:"right",padding:"4px 2px"}}>C</th>
+              <th/>
+            </tr></thead>
+            <tbody>
+              {plate.map(i=>{const f=i.grams/100;return(<tr key={i.id} style={{borderBottom:`1px solid ${C.borderLight}`}}>
+                <td style={{padding:"5px 2px",color:C.text}}>{i.name}</td>
+                <td style={{padding:"5px 2px",textAlign:"right"}}>
+                  <input type="number" value={i.grams} onChange={e=>updateGrams(i.id,e.target.value)} style={{width:50,background:C.cardAlt,border:`1px solid ${C.border}`,borderRadius:4,padding:"3px 5px",fontSize:11,color:C.text,fontFamily:MONO,textAlign:"right",outline:"none"}}/>
+                </td>
+                <td style={{padding:"5px 2px",textAlign:"right",fontFamily:MONO}}>{Math.round(i.kcal*f)}</td>
+                <td style={{padding:"5px 2px",textAlign:"right",color:C.green,fontFamily:MONO}}>{Math.round(i.p*f)}</td>
+                <td style={{padding:"5px 2px",textAlign:"right",color:C.orange,fontFamily:MONO}}>{Math.round(i.f*f)}</td>
+                <td style={{padding:"5px 2px",textAlign:"right",color:C.blue,fontFamily:MONO}}>{Math.round(i.c*f)}</td>
+                <td style={{padding:"5px 2px",textAlign:"right"}}><span onClick={()=>removeFromPlate(i.id)} style={{cursor:"pointer",color:C.red,fontSize:12}}>✕</span></td>
+              </tr>);})}
+              <tr style={{borderTop:`2px solid ${C.border}`,background:C.cardAlt}}>
+                <td style={{padding:"6px 2px",fontWeight:700,fontFamily:SANS}}>TOTAL</td>
+                <td/>
+                <td style={{padding:"6px 2px",fontWeight:700,textAlign:"right",fontFamily:MONO}}>{Math.round(plateTotals.cal)}</td>
+                <td style={{padding:"6px 2px",fontWeight:700,textAlign:"right",color:C.green,fontFamily:MONO}}>{Math.round(plateTotals.p)}g</td>
+                <td style={{padding:"6px 2px",fontWeight:700,textAlign:"right",color:C.orange,fontFamily:MONO}}>{Math.round(plateTotals.f)}g</td>
+                <td style={{padding:"6px 2px",fontWeight:700,textAlign:"right",color:C.blue,fontFamily:MONO}}>{Math.round(plateTotals.c)}g</td>
+                <td/>
+              </tr>
+            </tbody>
+          </table>
+          <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap",alignItems:"center"}}>
+            <input type="date" value={mealDate} onChange={e=>setMealDate(e.target.value)} style={{background:C.cardAlt,border:"none",borderBottom:`2px solid ${C.border}`,borderRadius:0,padding:"6px 4px",fontSize:11,color:C.text,fontFamily:MONO,outline:"none"}}/>
+            <input type="time" value={mealTime} onChange={e=>setMealTime(e.target.value)} style={{background:C.cardAlt,border:"none",borderBottom:`2px solid ${C.border}`,borderRadius:0,padding:"6px 4px",fontSize:11,color:C.text,fontFamily:MONO,outline:"none",width:80}}/>
+            <input value={mealName} onChange={e=>setMealName(e.target.value)} placeholder="Meal name (e.g. Lunch)" style={{...sty.input(120),textAlign:"left",flex:1,minWidth:100}}/>
+            <button onClick={savePlate} style={sty.btn(C.green,true)}>Save</button>
+            <Status s={ss}/>
+          </div>
+        </>)}
+      </div>
+    </div>)}
+
+    {tab==="quick"&&(<div style={sty.card}>
+      <div style={{fontWeight:700,fontSize:14,color:C.text,marginBottom:8,fontFamily:SANS}}>Quick Add</div>
+      <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+        <input type="date" value={qDate} onChange={e=>setQDate(e.target.value)} style={{background:C.cardAlt,border:"none",borderBottom:`2px solid ${C.border}`,borderRadius:0,padding:"6px 4px",fontSize:11,color:C.text,fontFamily:MONO,outline:"none"}}/>
+        <input type="time" value={qTime} onChange={e=>setQTime(e.target.value)} style={{background:C.cardAlt,border:"none",borderBottom:`2px solid ${C.border}`,borderRadius:0,padding:"6px 4px",fontSize:11,color:C.text,fontFamily:MONO,outline:"none",width:80}}/>
+        <input value={qName} onChange={e=>setQName(e.target.value)} placeholder="Name" style={{...sty.input(70),textAlign:"left",flex:2,minWidth:50}}/>
+        <input type="number" value={qCal} onChange={e=>setQCal(e.target.value)} placeholder="kcal" style={sty.input(50)}/>
+        <input type="number" value={qProt} onChange={e=>setQProt(e.target.value)} placeholder="P(g)" style={sty.input(50)}/>
+        <button onClick={quickAdd} disabled={!qCal} style={sty.btn(C.green,true)}>+</button>
+        <Status s={ss}/>
+      </div>
+    </div>)}
+
+    {tab==="history"&&(<div style={sty.card}><div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}>
+      <span style={{fontWeight:700,fontSize:14,color:C.text,fontFamily:SANS}}>History</span>
+      <div style={{display:"flex",gap:4}}>{[7,14,30,9999].map(d=>(<button key={d} onClick={()=>setHistDays(d)} style={sty.tab(histDays===d)}>{d===9999?"All":d}</button>))}</div>
+    </div>
+      {(()=>{const now=new Date();const cut=new Date(now);cut.setDate(now.getDate()-histDays);
+        const entries=health.filter(e=>(e.meals||[]).length>0&&(histDays===9999||new Date(e.date)>=cut)).sort((a,b)=>b.date.localeCompare(a.date));
+        if(!entries.length)return<div style={{fontSize:12,color:C.textDim,fontFamily:SANS}}>No meals logged.</div>;
+        return(<div>{entries.map(e=>{
+          const t=(e.meals||[]).reduce((a,m)=>({cal:a.cal+m.calories,p:a.p+m.protein_g,f:a.f+m.fat_g,c:a.c+m.carbs_g}),{cal:0,p:0,f:0,c:0});
+          const isExp=expDate===e.date;
+          return(<div key={e.date} style={{borderBottom:`1px solid ${C.borderLight}`,padding:"8px 0"}}>
+            <div onClick={()=>setExpDate(isExp?null:e.date)} style={{display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
+              <span style={{fontSize:12,fontWeight:700,color:C.text,fontFamily:MONO}}>{e.date} {isExp?"▾":"▸"}</span>
+              <span style={{fontSize:11,color:C.textDim,fontFamily:MONO}}>{Math.round(t.cal)}kcal · P{Math.round(t.p)}g</span>
+            </div>
+            {isExp&&((e.meals||[]).length>0?(<>
+              <div style={{display:"flex",gap:4,margin:"8px 0 4px"}}>{[["time","Time"],["name","Name"],["cal","kcal"]].map(([v,l])=>(<button key={v} onClick={()=>setMealSort(v)} style={sty.tab(mealSort===v)}>{l}</button>))}</div>
+              <table style={{width:"100%",fontSize:11,fontFamily:SANS,borderCollapse:"collapse",marginTop:4}}>
+                <thead><tr style={{color:C.textDim,fontFamily:MONO,fontSize:10}}>
+                  <th style={{textAlign:"left",padding:"4px 2px"}}>{mealSort==="time"?"Time":""}</th>
+                  <th style={{textAlign:"left",padding:"4px 2px"}}>Meal</th>
+                  <th style={{textAlign:"right",padding:"4px 2px"}}>kcal</th>
+                  <th style={{textAlign:"right",padding:"4px 2px"}}>P</th>
+                  <th style={{textAlign:"right",padding:"4px 2px"}}>F</th>
+                  <th style={{textAlign:"right",padding:"4px 2px"}}>C</th>
+                </tr></thead>
+                <tbody>
+                  {[...(e.meals||[])].sort((a,b)=>{if(mealSort==="time")return(a.time||"").localeCompare(b.time||"");if(mealSort==="cal")return b.calories-a.calories;return(a.name||"").localeCompare(b.name||"");}).map((m,i)=>(<tr key={i} style={{borderBottom:`1px solid ${C.borderLight}`}}>
+                    <td style={{padding:"5px 4px",fontFamily:MONO,color:C.textDim,fontSize:10}}>{m.time||""}</td>
+                    <td style={{padding:"5px 4px",color:C.text}}><div style={{fontWeight:600}}>{m.name}</div>{m.description&&<div style={{fontSize:9,color:C.textDim,fontFamily:SANS}}>{m.description}</div>}</td>
+                    <td style={{padding:"5px 4px",textAlign:"right",fontFamily:MONO}}>{Math.round(m.calories)}</td>
+                    <td style={{padding:"5px 4px",textAlign:"right",color:C.green,fontFamily:MONO}}>{Math.round(m.protein_g)}g</td>
+                    <td style={{padding:"5px 4px",textAlign:"right",color:C.orange,fontFamily:MONO}}>{Math.round(m.fat_g)}g</td>
+                    <td style={{padding:"5px 4px",textAlign:"right",color:C.blue,fontFamily:MONO}}>{Math.round(m.carbs_g)}g</td>
+                  </tr>))}
+                  <tr style={{borderTop:`2px solid ${C.border}`,background:C.cardAlt}}>
+                    <td style={{padding:"5px 4px",fontWeight:700,fontFamily:SANS}}>TOTAL</td>
+                    <td/>
+                    <td style={{padding:"5px 4px",fontWeight:700,textAlign:"right",fontFamily:MONO}}>{Math.round(t.cal)}</td>
+                    <td style={{padding:"5px 4px",fontWeight:700,textAlign:"right",color:C.green,fontFamily:MONO}}>{Math.round(t.p)}g</td>
+                    <td style={{padding:"5px 4px",fontWeight:700,textAlign:"right",color:C.orange,fontFamily:MONO}}>{Math.round(t.f)}g</td>
+                    <td style={{padding:"5px 4px",fontWeight:700,textAlign:"right",color:C.blue,fontFamily:MONO}}>{Math.round(t.c)}g</td>
+                  </tr>
+                </tbody></table></>)
+              :(<div style={{color:C.textDim,fontSize:12,fontFamily:SANS}}>No meal detail.</div>))}
+              {isExp&&e.meals?.length>0&&<div style={{marginTop:6,textAlign:"right"}}>
+                {confirmDel===e.date?(<span style={{display:"inline-flex",gap:6,alignItems:"center"}}>
+                  <span style={{fontSize:10,color:C.textMid,fontFamily:SANS}}>Delete meals?</span>
+                  <span onClick={()=>{const nl=health.map(h=>h.date===e.date?{...h,meals:[],calories:"",protein:"",fat:"",carbs:""}:h);saveH(nl);setExpDate(null);setConfirmDel(null);}} style={{fontSize:10,color:C.red,cursor:"pointer",fontWeight:700,fontFamily:SANS}}>Yes</span>
+                  <span onClick={()=>setConfirmDel(null)} style={{fontSize:10,color:C.textDim,cursor:"pointer",fontFamily:SANS}}>No</span>
+                </span>):(<span onClick={()=>setConfirmDel(e.date)} style={{fontSize:10,color:C.red,cursor:"pointer",fontFamily:SANS}}>🗑 Delete meals</span>)}</div>}
+          </div>);})}</div>);})()}
+    </div>)}
+  </div>);
 }
 
 // ─── SETTINGS ───────────────────────────────────────────────────────────────
@@ -1961,7 +2024,12 @@ function App() {
     {(showSidebar||showLeftBar)&&<div onClick={()=>{setShowSidebar(false);setShowLeftBar(false);}} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.3)",zIndex:240}}/>}
     {showSidebar&&(()=>{
       const days=[];const now=new Date();now.setHours(0,0,0,0);
-      for(let i=20;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);days.push(localDate(d));}
+      const allDs=[...Object.keys(gym),...health.map(h=>h.date)].filter(Boolean);
+      let earliest=now;
+      if(allDs.length){const minStr=allDs.reduce((a,b)=>a<b?a:b);const minD=new Date(minStr+"T12:00:00");if(!isNaN(minD))earliest=minD;}
+      earliest.setHours(0,0,0,0);
+      const span=Math.max(20,Math.round((now-earliest)/864e5));
+      for(let i=span;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);days.push(localDate(d));}
       const feelMap={ok:"💚",pumped:"🔥",twinge:"⚠️",injury:"🔴",sick:"🤢",holiday:"✈️"};
       const goDate=(ds)=>{
         const cycle=["gym","food","home"];
@@ -2004,7 +2072,12 @@ function App() {
     })()}
     {showLeftBar&&(()=>{
       const days=[];const now=new Date();now.setHours(0,0,0,0);
-      for(let i=20;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);days.push(localDate(d));}
+      const allDs=[...Object.keys(gym),...health.map(h=>h.date)].filter(Boolean);
+      let earliest=now;
+      if(allDs.length){const minStr=allDs.reduce((a,b)=>a<b?a:b);const minD=new Date(minStr+"T12:00:00");if(!isNaN(minD))earliest=minD;}
+      earliest.setHours(0,0,0,0);
+      const span=Math.max(20,Math.round((now-earliest)/864e5));
+      for(let i=span;i>=0;i--){const d=new Date(now);d.setDate(now.getDate()-i);days.push(localDate(d));}
       const goDate=(ds)=>{
         const cycle=["gym","food","home"];
         const cur=tapCycle[ds]||0;
